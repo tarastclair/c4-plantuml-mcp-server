@@ -40,13 +40,13 @@ This MCP server will enable interactive creation of C4 Context diagrams through 
   - [x] Support unique ID generation
   - [x] Manage diagram timestamps
 
-- [ ] Relationship Management Tools
+- [x] Relationship Management Tools
   - [x] Add/update relationships
   - [x] Delete relationships
   - [x] Relationship validation
-  - [ ] Implement entry point tool for guided workflow
-  - [ ] Add nextPrompt field to all tool responses
-  - [ ] Create standard tool response format for state transitions
+  - [x] Implement entry point tool for guided workflow
+  - [x] Add nextPrompt field to all tool responses
+  - [x] Create standard tool response format for state transitions
 
 ## Phase 3: Guided Flow Implementation
 - [x] Conversation Prompts
@@ -74,29 +74,33 @@ This MCP server will enable interactive creation of C4 Context diagrams through 
   - [ ] README updates
 
 ## Next Implementation Step
-Implement the entry point tool and conversation state management to enable multi-step guided flows. This requires:
+Complete the conversation state management and guided workflow implementation for Phase 3. This requires:
 
-1. Creating a dedicated entry point tool (`createC4Diagram`) that:
-   - Creates an initial blank diagram
-   - Returns the first prompt to trigger (`identifySystem`)
-   - Has a clear description to help the LLM recognize when to use it
+1. Implementing conversation state management:
+   - Track conversation context across multiple steps
+   - Support revisiting and modifying previous choices
+   - Handle error recovery within the guided flow
 
-2. Updating all tool responses to include:
-   - The `nextPrompt` field to trigger the next step
-   - Required context parameters for the next prompt
-   - Standardized state transition format
+2. Designing and implementing the complete guided workflow state machine:
+   - Define all possible states and transitions
+   - Handle edge cases like skipping steps or going back
+   - Provide clear guidance at each step
 
-3. Designing and implementing the full state machine for the guided workflow
+3. Implementing refinement mechanisms within the guided flow:
+   - Allow users to revise earlier decisions
+   - Support manual overrides of automated suggestions
+   - Provide options to adjust the generated diagram
 
 ## Rationale for Next Steps
-Implementing conversation state management will:
-- Create a cohesive flow between different prompt stages
-- Enable the LLM to remember previous context and decisions
-- Support guided, step-by-step diagram creation
-- Allow for revisiting and modifying previous choices
-- Enhance the user experience through contextual awareness
-- Provide a clear entry point for conversation initiation
-- Create a consistent user experience regardless of background knowledge
+Completing the conversation state management and guided workflow will:
+- Provide a fully interactive, guided diagram creation experience
+- Allow users to refine their diagrams iteratively
+- Handle errors and edge cases gracefully
+- Support a natural conversation flow with context awareness
+- Enable sophisticated multi-step workflows
+- Create a polished user experience with clear guidance
+- Ensure diagrams follow C4 model best practices
+- Support both novice and expert users effectively
 
 ## Technical Dependencies
 1. MCP TypeScript SDK

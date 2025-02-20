@@ -1,3 +1,5 @@
+import { WorkflowStateContext } from './workflow-state.js';
+
 // Core types for C4 elements
 export type ElementType = 'system' | 'person' | 'external-system';
 
@@ -27,6 +29,7 @@ export interface C4Diagram {
     created: string;
     updated: string;
     metadata?: Record<string, unknown>;
+    workflowState?: WorkflowStateContext;
 }
 
 export interface SVGCache {
@@ -49,6 +52,10 @@ export interface DiagramStorage {
     updateDiagram(id: string, updates: Partial<C4Diagram>): Promise<C4Diagram>;
     deleteDiagram(id: string): Promise<void>;
     listDiagrams(): Promise<C4Diagram[]>;
+    
+    // Workflow state operations
+    getWorkflowState(diagramId: string): Promise<WorkflowStateContext | null>;
+    updateWorkflowState(diagramId: string, workflowState: WorkflowStateContext): Promise<void>;
     
     // Element operations
     addElement(diagramId: string, element: Omit<C4Element, 'id'>): Promise<C4Element>;

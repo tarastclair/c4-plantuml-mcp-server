@@ -10,6 +10,7 @@ import {
     DiagramStorage,
     SVGCache
 } from './types-and-interfaces.js';
+import { createInitialWorkflowState, WorkflowStateContext } from './workflow-state.js';
 
 /**
  * Implements storage for C4 diagrams using lowdb
@@ -46,6 +47,7 @@ export class DiagramDb implements DiagramStorage {
     /**
      * Create a new C4 diagram
      * Generates a unique ID and timestamps
+     * Initializes workflow state
      */
     async createDiagram(name: string, description?: string): Promise<C4Diagram> {
         const now = new Date().toISOString();
@@ -56,7 +58,8 @@ export class DiagramDb implements DiagramStorage {
             elements: [],
             relationships: [],
             created: now,
-            updated: now
+            updated: now,
+            workflowState: createInitialWorkflowState()
         };
 
         this.db.data.diagrams.push(diagram);
@@ -93,6 +96,36 @@ export class DiagramDb implements DiagramStorage {
         this.db.data.diagrams[index] = updated;
         await this.db.write();
         return updated;
+    }
+
+    /**
+     * Update workflow state for a diagram
+     * @param diagramId ID of the diagram
+     * @param workflowState New workflow state to set
+     */
+    async updateWorkflowState(diagramId: string, workflowState: WorkflowStateContext): Promise<void> {
+        const diagram = await this.getDiagram(diagramId);
+        if (!diagram) {
+            throw new Error(`Diagram not found: ${diagramId}`);
+        }
+        
+        diagram.workflowState = workflowState;
+        diagram.updated = new Date().toISOString();
+        await this.db.write();
+    }
+
+    /**
+     * Get workflow state for a diagram
+     * @param diagramId ID of the diagram
+     * @returns Current workflow state or null if diagram not found
+     */
+    async getWorkflowState(diagramId: string): Promise<WorkflowStateContext | null> {
+        const diagram = await this.getDiagram(diagramId);
+        if (!diagram) {
+            return null;
+        }
+        
+        return diagram.workflowState || createInitialWorkflowState();
     }
 
     /**
