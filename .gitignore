@@ -1,0 +1,74 @@
+# Dependency Directories
+node_modules/
+jspm_packages/
+bower_components/
+
+# Build Output Directories
+build/
+dist/
+out/
+target/
+
+# TypeScript Compilation Artifacts
+*.tsbuildinfo
+*.js
+*.js.map
+*.d.ts
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment and Secret Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime Data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Testing and Coverage
+coverage/
+.nyc_output/
+.test/
+.cache/
+
+# IDE and Editor Specific Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+.tmp/
+.temp/
+
+# Package Manager Specific
+npm-debug.log
+yarn-lock.yaml
+pnpm-lock.yaml
+yarn.lock
+
+# Backup Files
+*.bak
+*.gho
+*.ori
+*.orig
+*.tmp
+
+# Compilation Artifacts from Other Tools
+.webpack/
+.parcel-cache/
+webpack-build-info.json
