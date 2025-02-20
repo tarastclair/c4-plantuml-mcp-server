@@ -21,7 +21,6 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   registerUpdateElementTool(server, db);
   registerUpdateRelationshipTool(server, db);
   registerCreateC4DiagramTool(server, db);
-  registerGenerateContextDiagramTool(server, db);
   registerAddSystemTool(server, db);
   registerAddPersonTool(server, db);
   registerAddExternalSystemTool(server, db);
@@ -372,6 +371,7 @@ const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void 
  * Primary entry point tool for guided C4 diagram creation
  * This tool creates a new diagram and kicks off the guided workflow
  */
+// TODO: Expand scope beyond just Context (C1) diagrams to C2-C4 as well
 const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "createC4Diagram",
@@ -409,107 +409,6 @@ const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => 
         });
       } catch (error) {
         return createErrorResponse(`Error creating diagram: ${getErrorMessage(error)}`);
-      }
-    }
-  );
-};
-
-/**
- * Register the standalone context diagram generation tool
- * This creates a complete diagram in one step based on provided elements
- */
-const registerGenerateContextDiagramTool = (server: McpServer, db: DiagramDb): void => {
-  server.tool(
-    "generateContextDiagram",
-    "Generate a C4 Context diagram from the provided system, people, and relationships",
-    {
-      title: z.string().describe("Title of the diagram"),
-      description: z.string().optional().describe("Optional description of the diagram"),
-      system: z.object({
-        name: z.string(),
-        description: z.string()
-      }),
-      people: z.array(z.object({
-        name: z.string(),
-        description: z.string()
-      })),
-      relationships: z.array(z.object({
-        from: z.string(),
-        to: z.string(),
-        description: z.string(),
-        technology: z.string().optional()
-      }))
-    },
-    async ({ title, description, system, people, relationships }) => {
-      try {
-        // Create a new diagram in the database
-        const diagram = await db.createDiagram(title, description);
-        
-        // Add system
-        const systemElement = await db.addElement(diagram.id, {
-          type: 'system',
-          name: system.name,
-          description: system.description
-        });
-        
-        // Add people
-        const personElements = [];
-        for (const person of people) {
-          const personElement = await db.addElement(diagram.id, {
-            type: 'person',
-            name: person.name,
-            description: person.description
-          });
-          personElements.push(personElement);
-        }
-        
-        // Add relationships
-        for (const rel of relationships) {
-          // Find the element IDs based on names
-          let sourceElement;
-          let targetElement;
-          
-          if (rel.from === system.name) {
-            sourceElement = systemElement;
-          } else {
-            sourceElement = personElements.find(p => p.name === rel.from);
-          }
-          
-          if (rel.to === system.name) {
-            targetElement = systemElement;
-          } else {
-            targetElement = personElements.find(p => p.name === rel.to);
-          }
-          
-          if (sourceElement && targetElement) {
-            await db.addRelationship(diagram.id, {
-              sourceId: sourceElement.id,
-              targetId: targetElement.id,
-              description: rel.description,
-              technology: rel.technology
-            });
-          }
-        }
-        
-        // Get updated diagram
-        const updatedDiagram = await db.getDiagram(diagram.id);
-        if (!updatedDiagram) {
-          throw new Error(`Diagram not found after updates: ${diagram.id}`);
-        }
-        
-        // Generate diagram visualization
-        const svg = await generateDiagramSVG(updatedDiagram);
-
-        await db.cacheSVG(diagram.id, svg);
-        
-        return createToolResponse({
-          diagramId: diagram.id,
-          svg,
-          nextPrompt: "diagramComplete",
-          message: "Your C4 Context diagram has been created successfully!"
-        });
-      } catch (error) {
-        return createErrorResponse(`Error generating diagram: ${getErrorMessage(error)}`);
       }
     }
   );
