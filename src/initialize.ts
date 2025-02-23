@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
  * Get the root directory of our application
  * This ensures consistent path resolution regardless of where the process is started
  */
-const getAppRoot = () => {
+export const getAppRoot = () => {
   // Go up one level from src to get to the app root
   return path.resolve(__dirname, '..');
 };

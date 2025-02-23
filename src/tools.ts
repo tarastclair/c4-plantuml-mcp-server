@@ -6,7 +6,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DiagramDb } from './db.js';
 import { createToolResponse, createErrorResponse, getErrorMessage } from './utils.js';
-import { generateDiagramSVG, generateEmptyDiagramSVG } from './plantuml-utils.js';
+import { generateDiagramSVG, generateEmptyDiagramSVG, writeSvgToFile } from './plantuml-utils.js';
 import { DiagramWorkflowState, updateWorkflowState, createErrorRecoveryState } from './workflow-state.js';
 import { C4Element, ElementType, C4Relationship } from './types-and-interfaces.js';
 
@@ -93,7 +93,9 @@ const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): void =>
         let svg = await db.getCachedSVG(diagramId);
         if (!svg) {
           svg = await generateDiagramSVG(diagram);
-          await db.cacheSVG(diagramId, svg);
+        // Cache SVG and write to file
+        await db.cacheSVG(diagramId, svg);
+        const svgPath = await writeSvgToFile(diagramId, svg);
         }
 
         // Prepare appropriate message based on the target state
@@ -195,6 +197,7 @@ const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
         
         const svg = await generateDiagramSVG(updatedDiagram);
         await db.cacheSVG(diagramId, svg);
+        const svgOutput = await writeSvgToFile(diagramId, svg);
 
         // Get current workflow state
         const currentState = await db.getWorkflowState(diagramId);
@@ -217,6 +220,7 @@ const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
           diagramId,
           elementId,
           svg,
+          svgOutput,
           nextPrompt: "diagramRefinement",
           workflowState: nextState
         });

@@ -9,6 +9,7 @@ dist/
 out/
 target/
 data/
+output/
 
 # TypeScript Compilation Artifacts
 *.tsbuildinfo
