@@ -8,6 +8,7 @@ build/
 dist/
 out/
 target/
+data/
 
 # TypeScript Compilation Artifacts
 *.tsbuildinfo

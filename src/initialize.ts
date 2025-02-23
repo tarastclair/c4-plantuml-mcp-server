@@ -1,19 +1,42 @@
 import path from 'path';
+import fs from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { DiagramDb } from './db.js';
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/**
+ * Get the root directory of our application
+ * This ensures consistent path resolution regardless of where the process is started
+ */
+const getAppRoot = () => {
+  // Go up one level from src to get to the app root
+  return path.resolve(__dirname, '..');
+};
+
 /**
  * Initialize the database with the given path or default
- * Creates the database if it doesn't exist
+ * Creates necessary directories if they don't exist
  * 
- * @param customDbPath Optional path to database directory
+ * @param customDbPath Optional absolute path to database directory
  * @returns Initialized database instance
  */
 export const initializeDatabase = async (customDbPath?: string): Promise<DiagramDb> => {
-  const dbPath = customDbPath || path.join(process.cwd(), 'data');
-  const db = new DiagramDb(dbPath);
-  
   try {
+    // Use a data directory in our app root by default
+    const dbPath = customDbPath || path.join(getAppRoot(), 'data');
+    
+    // Log the path we're trying to use
+    console.error('Initializing database at:', dbPath);
+    
+    // Ensure data directory exists
+    await fs.mkdir(dbPath, { recursive: true });
+    
+    const db = new DiagramDb(dbPath);
     await db.initialize();
     console.error('Database initialized successfully');
     return db;

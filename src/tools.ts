@@ -46,7 +46,7 @@ const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): void =>
         'complete'
       ]).describe("The workflow state to navigate to")
     },
-    async ({ diagramId, targetState }) => {
+    async ({ diagramId, targetState }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -122,11 +122,10 @@ const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): void =>
             break;
         }
 
-        return createToolResponse({
+        return createToolResponse(message, {
           diagramId,
           svg,
           nextPrompt: nextPromptName,
-          message,
           workflowState: nextState
         });
       } catch (error) {
@@ -166,7 +165,7 @@ const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
       description: z.string().optional().describe("New description for the element"),
       type: z.enum(['system', 'person', 'external-system']).optional().describe("New type for the element")
     },
-    async ({ diagramId, elementId, name, description, type }) => {
+    async ({ diagramId, elementId, name, description, type }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -212,12 +211,13 @@ const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
         });
         await db.updateWorkflowState(diagramId, nextState);
 
-        return createToolResponse({
+        const message = `Element "${element.name}" updated successfully. Would you like to make any other refinements?`
+
+        return createToolResponse(message, {
           diagramId,
           elementId,
           svg,
           nextPrompt: "diagramRefinement",
-          message: `Element "${element.name}" updated successfully. Would you like to make any other refinements?`,
           workflowState: nextState
         });
       } catch (error) {
@@ -258,7 +258,7 @@ const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void 
       description: z.string().optional().describe("New description for the relationship"),
       technology: z.string().optional().describe("New technology used in the relationship")
     },
-    async ({ diagramId, relationshipId, sourceId, targetId, description, technology }) => {
+    async ({ diagramId, relationshipId, sourceId, targetId, description, technology }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -332,12 +332,13 @@ const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void 
         });
         await db.updateWorkflowState(diagramId, nextState);
 
-        return createToolResponse({
+        const message = `Relationship from "${sourceElement.name}" to "${targetElement.name}" updated successfully. Would you like to make any other refinements?`
+
+        return createToolResponse(message, {
           diagramId,
           relationshipId,
           svg,
           nextPrompt: "diagramRefinement",
-          message: `Relationship from "${sourceElement.name}" to "${targetElement.name}" updated successfully. Would you like to make any other refinements?`,
           workflowState: nextState,
           // Include element info to help formulate next prompts
           elementTypes: {
@@ -375,12 +376,25 @@ const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void 
 const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "createC4Diagram",
-    "Create a new C4 Context diagram and start the guided modeling process",
+    `Create a new C4 Context diagram and starts the guided modeling process.
+    Required Fields:
+    - title: String (The name of your system/diagram)
+    - description: String (optional, A brief explanation of what the diagram represents)
+
+    Returns a unique diagram ID that you'll need for all subsequent operations.
+    
+    Example:
+    {
+      "title": "E-commerce Platform",
+      "description": "Core system architecture for our online store"
+    }
+      
+    Response will include a diagram ID like: "b7a405e2-4353-4c67-ba6d-143eaf35e538"`,
     {
       title: z.string().describe("Title for the new diagram"),
       description: z.string().optional().describe("Optional description of what the diagram represents")
     },
-    async ({ title, description }) => {
+    async ({ title, description }, extra) => {
       try {
         // Create a new blank diagram
         const diagram = await db.createDiagram(title, description);
@@ -391,7 +405,6 @@ const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => 
         
         // Get initial workflow state (created during diagram creation)
         const initialState = await db.getWorkflowState(diagram.id);
-        
         if (!initialState) {
           throw new Error(`Failed to initialize workflow state for diagram: ${diagram.id}`);
         }
@@ -399,12 +412,13 @@ const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => 
         // Update workflow state to system identification
         const nextState = updateWorkflowState(initialState, 'systemIdentification');
         await db.updateWorkflowState(diagram.id, nextState);
+
+        const message = `Created new diagram (ID: ${diagram.id}). Let's start by identifying the core system. What is it called, and what does it do?`
         
-        return createToolResponse({
+        return createToolResponse(message, {
           diagramId: diagram.id,
           svg: svg,
           nextPrompt: "systemIdentification",
-          message: "Let's start by identifying the core system. What is it called, and what does it do?",
           workflowState: nextState
         });
       } catch (error) {
@@ -421,17 +435,29 @@ const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => 
 const registerAddSystemTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "add-system",
-    "Add or update a system in the C4 diagram",
+    `Add or update a system in the C4 diagram.
+    
+    Required Fields:
+    - diagramId: String (UUID from createC4Diagram)
+    - name: String (Name of the system)
+    - description: String (Description of what the system does)
+    
+    Example:
     {
-      diagramId: z.string().describe("ID of the diagram"),
+      "diagramId": "b7a405e2-4353-4c67-ba6d-143eaf35e538",
+      "name": "Payment Processing System",
+      "description": "Handles all payment transactions and integrates with external payment providers"
+    }`,
+    {
+      diagramId: z.string().describe("UUID of the diagram from createC4Diagram"),
       name: z.string().describe("Name of the system"),
       description: z.string().describe("Description of the system")
     },
-    async ({ diagramId, name, description }) => {
+    async ({ diagramId, name, description }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
-          throw new Error(`Diagram not found: ${diagramId}`);
+          throw new Error(`Diagram not found. Please provide a valid diagram ID from the createC4Diagram response.`);
         }
 
         // Add the system element
@@ -458,7 +484,7 @@ const registerAddSystemTool = (server: McpServer, db: DiagramDb): void => {
 
         // Determine next state based on current diagram state
         const personCount = updatedDiagram.elements.filter(e => e.type === 'person').length;
-        const nextPromptName = personCount === 1 
+        const nextPromptName = personCount === 0 
           ? "userActorDiscovery"  // First person - stay in actor discovery
           : "externalSystemIdentification"; // Multiple people - move to external systems
 
@@ -471,13 +497,14 @@ const registerAddSystemTool = (server: McpServer, db: DiagramDb): void => {
         });
         await db.updateWorkflowState(diagramId, nextState);
 
-        return createToolResponse({
+        const message = nextPromptName === "userActorDiscovery" ? "Now, let's identify the users or actors who interact with this system." : "Now let's identify the external systems that interact with your core system."
+
+        return createToolResponse(message, {
           diagramId,
           systemId: system.id,
           systemName: name,
           svg,
           nextPrompt: nextPromptName,
-          message: nextPromptName === "userActorDiscovery" ? "Now, let's identify the users or actors who interact with this system." : "Now let's identify the external systems that interact with your core system.",
           workflowState: nextState
         });
       } catch (error) {
@@ -501,7 +528,7 @@ const registerAddPersonTool = (server: McpServer, db: DiagramDb): void => {
       description: z.string().describe("Description of the person/actor"),
       systemId: z.string().optional().describe("Optional ID of the system this person interacts with")
     },
-    async ({ diagramId, name, description, systemId }) => {
+    async ({ diagramId, name, description, systemId }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -540,7 +567,11 @@ const registerAddPersonTool = (server: McpServer, db: DiagramDb): void => {
 
         await db.cacheSVG(diagramId, svg);
 
-        return createToolResponse({
+        const message = updatedDiagram.elements.filter(e => e.type === 'person').length === 1
+        ? "Great! Are there any other users or actors who interact with the system?"
+        : "Now, let's identify any external systems that interact with your core system."
+
+        return createToolResponse(message, {
           diagramId,
           personId: person.id,
           svg,
@@ -548,10 +579,7 @@ const registerAddPersonTool = (server: McpServer, db: DiagramDb): void => {
           // otherwise, suggest moving to external systems
           nextPrompt: updatedDiagram.elements.filter(e => e.type === 'person').length === 1 
             ? "userActorDiscovery" 
-            : "externalSystemIdentification",
-          message: updatedDiagram.elements.filter(e => e.type === 'person').length === 1
-            ? "Great! Are there any other users or actors who interact with the system?"
-            : "Now, let's identify any external systems that interact with your core system."
+            : "externalSystemIdentification"
         });
       } catch (error) {
         return createErrorResponse(`Error adding person: ${getErrorMessage(error)}`);
@@ -574,7 +602,7 @@ const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb): void =
       description: z.string().describe("Description of the external system"),
       systemId: z.string().optional().describe("Optional ID of the core system this external system interacts with")
     },
-    async ({ diagramId, name, description, systemId }) => {
+    async ({ diagramId, name, description, systemId }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -613,7 +641,11 @@ const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb): void =
 
         await db.cacheSVG(diagramId, svg);
 
-        return createToolResponse({
+        const message = updatedDiagram.elements.filter(e => e.type === 'external-system').length === 1
+        ? "Great! Are there any other external systems that interact with your core system?"
+        : "Now, let's define the relationships between these elements more precisely."
+
+        return createToolResponse(message, {
           diagramId,
           externalSystemId: externalSystem.id,
           svg,
@@ -621,10 +653,7 @@ const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb): void =
           // otherwise, suggest moving to relationships
           nextPrompt: updatedDiagram.elements.filter(e => e.type === 'external-system').length === 1
             ? "externalSystemIdentification"
-            : "relationshipDefinition",
-          message: updatedDiagram.elements.filter(e => e.type === 'external-system').length === 1
-            ? "Great! Are there any other external systems that interact with your core system?"
-            : "Now, let's define the relationships between these elements more precisely."
+            : "relationshipDefinition"
         });
       } catch (error) {
         return createErrorResponse(`Error adding external system: ${getErrorMessage(error)}`);
@@ -648,7 +677,7 @@ const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): void => 
       description: z.string().describe("Description of the relationship"),
       technology: z.string().optional().describe("Optional technology used in the relationship")
     },
-    async ({ diagramId, sourceId, targetId, description, technology }) => {
+    async ({ diagramId, sourceId, targetId, description, technology }, extra) => {
       try {
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
@@ -687,12 +716,13 @@ const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): void => 
           throw new Error('Source or target element not found after adding relationship');
         }
 
-        return createToolResponse({
+        const message = `Relationship added from ${sourceElement.name} to ${targetElement.name}. Are there any other relationships you'd like to define?`
+
+        return createToolResponse(message, {
           diagramId,
           relationshipId: relationship.id,
           svg,
           nextPrompt: "relationshipDefinition",
-          message: `Relationship added from ${sourceElement.name} to ${targetElement.name}. Are there any other relationships you'd like to define?`,
           // Include element info to help formulate next prompts
           elementTypes: {
             [sourceId]: sourceElement.type,

@@ -1,76 +1,48 @@
-/**
- * Utility functions for C4 diagram MCP server
- */
+import { WorkflowStateContext } from './workflow-state.js';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
-import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { WorkflowStateContext } from "./workflow-state.js";
-
-/**
- * Interface for creating standardized tool responses
- * This provides a consistent format for guided workflow state transitions
- */
-export interface ToolResponse {
-  // Basic response data
-  diagramId: string;
-  svg: string;
-  
-  // Workflow navigation
-  nextPrompt: string;
-  message: string;
-  
-  // Workflow state
-  workflowState?: WorkflowStateContext;
-  
-  // Optional context data
+type ToolMetadata = {
+  diagramId?: string;
+  svg?: string;
   elementId?: string;
-  elementIds?: string[];
-  elementTypes?: Record<string, string>;
-  [key: string]: any; // Allow additional context properties
-}
+  elementType?: string;
+  nextPrompt?: string;
+  workflowState?: WorkflowStateContext;
+  [key: string]: any;
+};
 
 /**
- * Creates a standardized tool response with workflow transition information
- * This ensures all tools return responses in a consistent format for the guided workflow
+ * Create a standardized successful tool response that matches the MCP SDK's expected format
+ * while preserving our custom metadata.
  * 
- * @param response The tool response data
- * @returns A properly formatted CallToolResult
+ * @param message User-facing message to display
+ * @param metadata Additional tool-specific metadata
+ * @returns SDK-compatible tool response
  */
-export function createToolResponse(response: ToolResponse): CallToolResult {
+export const createToolResponse = (message: string, metadata: ToolMetadata = {}): CallToolResult => {
   return {
     content: [{
       type: "text",
-      text: JSON.stringify(response)
-    }]
+      text: message
+    }],
+    // Include all our custom metadata
+    ...metadata,
+    // Never mark successful responses as errors
+    isError: false
   };
-}
+};
 
 /**
- * Creates an error response with standardized format
+ * Create a standardized error response that matches the MCP SDK's expected format.
+ * Also logs the error for server-side troubleshooting.
  * 
- * @param message Error message to display
- * @returns A properly formatted error CallToolResult
+ * @param message Error message
+ * @returns SDK-compatible error response
  */
-/**
- * Safely extracts an error message from any caught error
- * Handles different error types consistently
- * 
- * @param error Any caught error object (unknown type)
- * @returns A string representation of the error
- */
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
-}
-
-/**
- * Creates an error response with standardized format
- * 
- * @param message Error message to display
- * @returns A properly formatted error CallToolResult
- */
-export function createErrorResponse(message: string): CallToolResult {
+export const createErrorResponse = (message: string): CallToolResult => {
+  // Log error server-side
+  console.error(`[Tool Error] ${message}`);
+  
   return {
     content: [{
       type: "text",
@@ -78,4 +50,20 @@ export function createErrorResponse(message: string): CallToolResult {
     }],
     isError: true
   };
-}
+};
+
+/**
+ * Extract a user-friendly error message from various error types
+ * 
+ * @param error Error object
+ * @returns Formatted error message
+ */
+export const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'An unexpected error occurred';
+};

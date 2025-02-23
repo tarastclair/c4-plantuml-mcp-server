@@ -1,6 +1,5 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { initializeDatabase, createServer } from './initialize.js';
-import { registerAllPrompts } from './prompts.js';
 import { registerAllTools } from './tools.js';
 
 /**
@@ -15,8 +14,7 @@ const main = async () => {
     // Create MCP server instance
     const server = createServer();
     
-    // Register prompts and tools
-    registerAllPrompts(server);
+    // Register tools
     registerAllTools(server, db);
     
     // Connect transport and start server
