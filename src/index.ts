@@ -1,6 +1,6 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { initializeDatabase, createServer } from './initialize.js';
-import { registerAllTools } from './tools.js';
+import { registerAllTools } from './tools/index.js';
 
 /**
  * Main application function

@@ -32,16 +32,16 @@ export interface C4Diagram {
     workflowState?: WorkflowStateContext;
 }
 
-export interface SVGCache {
+export interface DiagramCache {
     diagramId: string;
-    svg: string;
+    diagram: string;
     generated: string;
 }
 
 // Database schema
 export interface DatabaseSchema {
     diagrams: C4Diagram[];
-    svgCache: SVGCache[];
+    diagramCache: DiagramCache[];
 }
 
 // Database interface (operations we'll need)
@@ -67,8 +67,8 @@ export interface DiagramStorage {
     updateRelationship(diagramId: string, relationshipId: string, updates: Partial<C4Relationship>): Promise<C4Relationship>;
     deleteRelationship(diagramId: string, relationshipId: string): Promise<void>;
     
-    // SVG cache operations
-    cacheSVG(diagramId: string, svg: string): Promise<void>;
-    getCachedSVG(diagramId: string): Promise<string | null>;
-    clearSVGCache(diagramId: string): Promise<void>;
+    // Diagram cache operations
+    cacheDiagram(diagramId: string, diagram: string): Promise<void>;
+    getCachedDiagram(diagramId: string): Promise<string | null>;
+    clearDiagramCache(diagramId: string): Promise<void>;
 }

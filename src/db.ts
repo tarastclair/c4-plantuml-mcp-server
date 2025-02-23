@@ -8,7 +8,7 @@ import {
     C4Relationship, 
     DatabaseSchema, 
     DiagramStorage,
-    SVGCache
+    DiagramCache
 } from './types-and-interfaces.js';
 import { createInitialWorkflowState, WorkflowStateContext } from './workflow-state.js';
 
@@ -27,7 +27,7 @@ export class DiagramDb implements DiagramStorage {
     constructor(dbPath: string) {
         // Ensure we have a consistent db file location
         const adapter = new JSONFile<DatabaseSchema>(join(dbPath, 'diagrams.json'));
-        this.db = new Low(adapter, { diagrams: [], svgCache: [] });
+        this.db = new Low(adapter, { diagrams: [], diagramCache: [] });
     }
 
     /**
@@ -39,7 +39,7 @@ export class DiagramDb implements DiagramStorage {
         
         // Ensure we have our collections
         if (!this.db.data) {
-            this.db.data = { diagrams: [], svgCache: [] };
+            this.db.data = { diagrams: [], diagramCache: [] };
             await this.db.write();
         }
     }
@@ -129,11 +129,11 @@ export class DiagramDb implements DiagramStorage {
     }
 
     /**
-     * Delete a diagram and its cached SVG
+     * Delete a diagram and its cached diagram
      */
     async deleteDiagram(id: string): Promise<void> {
         this.db.data.diagrams = this.db.data.diagrams.filter(d => d.id !== id);
-        this.db.data.svgCache = this.db.data.svgCache.filter(c => c.diagramId !== id);
+        this.db.data.diagramCache = this.db.data.diagramCache.filter(c => c.diagramId !== id);
         await this.db.write();
     }
 
@@ -298,40 +298,40 @@ export class DiagramDb implements DiagramStorage {
     }
 
     /**
-     * Cache an SVG for a diagram
+     * Cache an image for a diagram
      * Replaces existing cache if present
      */
-    async cacheSVG(diagramId: string, svg: string): Promise<void> {
-        const cacheIndex = this.db.data.svgCache.findIndex(c => c.diagramId === diagramId);
-        const cache: SVGCache = {
+    async cacheDiagram(diagramId: string, diagram: string): Promise<void> {
+        const cacheIndex = this.db.data.diagramCache.findIndex(c => c.diagramId === diagramId);
+        const cache: DiagramCache = {
             diagramId,
-            svg,
+            diagram,
             generated: new Date().toISOString()
         };
 
         if (cacheIndex === -1) {
-            this.db.data.svgCache.push(cache);
+            this.db.data.diagramCache.push(cache);
         } else {
-            this.db.data.svgCache[cacheIndex] = cache;
+            this.db.data.diagramCache[cacheIndex] = cache;
         }
 
         await this.db.write();
     }
 
     /**
-     * Retrieve cached SVG for a diagram
+     * Retrieve cached image for a diagram
      * Returns null if no cache exists
      */
-    async getCachedSVG(diagramId: string): Promise<string | null> {
-        const cache = this.db.data.svgCache.find(c => c.diagramId === diagramId);
-        return cache?.svg || null;
+    async getCachedDiagram(diagramId: string): Promise<string | null> {
+        const cache = this.db.data.diagramCache.find(c => c.diagramId === diagramId);
+        return cache?.diagram || null;
     }
 
     /**
-     * Clear cached SVG for a diagram
+     * Clear cached image for a diagram
      */
-    async clearSVGCache(diagramId: string): Promise<void> {
-        this.db.data.svgCache = this.db.data.svgCache.filter(c => c.diagramId !== diagramId);
+    async clearDiagramCache(diagramId: string): Promise<void> {
+        this.db.data.diagramCache = this.db.data.diagramCache.filter(c => c.diagramId !== diagramId);
         await this.db.write();
     }
 }

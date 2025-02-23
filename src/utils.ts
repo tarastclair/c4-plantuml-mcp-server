@@ -2,13 +2,9 @@ import { WorkflowStateContext } from './workflow-state.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 type ToolMetadata = {
-  diagramId?: string;
-  svg?: string;
-  elementId?: string;
-  elementType?: string;
-  nextPrompt?: string;
-  workflowState?: WorkflowStateContext;
-  [key: string]: any;
+  diagramId: string; // Must give the current diagramId
+  workflowState: WorkflowStateContext; // Must give the next step to take
+  [key: string]: any; // Can give additional info
 };
 
 /**
@@ -19,7 +15,7 @@ type ToolMetadata = {
  * @param metadata Additional tool-specific metadata
  * @returns SDK-compatible tool response
  */
-export const createToolResponse = (message: string, metadata: ToolMetadata = {}): CallToolResult => {
+export const createToolResponse = (message: string, metadata: ToolMetadata): CallToolResult => {
   return {
     content: [{
       type: "text",

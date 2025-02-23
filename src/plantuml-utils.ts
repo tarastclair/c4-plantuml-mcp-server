@@ -1,5 +1,6 @@
 /**
  * Utilities for working with PlantUML
+ * Generates C4 architectural diagrams in PNG format
  */
 import axios from 'axios';
 import fs from 'fs/promises';
@@ -19,43 +20,53 @@ export const encodePlantUML = (puml: string): string => {
 };
 
 /**
- * Generates an SVG from PlantUML markup by calling the public PlantUML server
+ * Generates a PNG diagram from PlantUML markup by calling the public PlantUML server
  * 
  * @param puml PlantUML markup to render
- * @returns SVG markup as a string
+ * @returns PNG data as a Buffer
  */
-export const generateSVG = async (puml: string): Promise<string> => {
+export const generateDiagram = async (puml: string): Promise<string> => {
+  console.log('Debug - PlantUML Content:');
+  console.log(puml);
+  
   const encoded = encodePlantUML(puml);
-  const response = await axios.get(`https://www.plantuml.com/plantuml/svg/${encoded}`, {
-    responseType: 'text'
-  });
-  return response.data;
+  console.log('\nDebug - Encoded URL:', encoded);
+  
+  try {
+    const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {
+      responseType: 'arraybuffer'
+    });
+    return Buffer.from(response.data).toString('base64');
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('PlantUML Server Error:');
+      console.error('Status:', error.response.status);
+      console.error('Headers:', error.response.headers);
+    }
+    throw error;
+  }
 };
 
 /**
  * Generates a PlantUML diagram from the current diagram state
- * 
  * @param diagram Current diagram state with elements and relationships
- * @returns SVG markup as a string
+ * @returns PNG diagram as a Buffer
  */
-export const generateDiagramSVG = async (diagram: C4Diagram): Promise<string> => {
-  // Build diagram lines one at a time for reliability
+export const generateDiagramFromState = async (diagram: C4Diagram): Promise<string> => {
   const lines: string[] = [];
   
   // Header
   lines.push('@startuml');
-  lines.push('!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
-  lines.push('');
-
-  // Basic diagram settings
-  lines.push('');
-  lines.push('');
+  lines.push('!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
   lines.push('');
   
-  // Title and description
+  // Title and description as a note
   lines.push(`title ${diagram.name}`);
   if (diagram.description) {
-    lines.push(`description ${diagram.description}`);
+    lines.push('');
+    lines.push(`note as DiagramDescription`);
+    lines.push(diagram.description);
+    lines.push('end note');
   }
   lines.push('');
 
@@ -79,7 +90,10 @@ export const generateDiagramSVG = async (diagram: C4Diagram): Promise<string> =>
   });
   lines.push('');
 
-  // Add relationships
+  // Track processed relationships to prevent duplicates
+  const processedRels = new Set<string>();
+
+  // Add relationships, ensuring no duplicates
   diagram.relationships.forEach(rel => {
     const source = diagram.elements.find(e => e.id === rel.sourceId);
     const target = diagram.elements.find(e => e.id === rel.targetId);
@@ -89,7 +103,14 @@ export const generateDiagramSVG = async (diagram: C4Diagram): Promise<string> =>
       const targetId = target.id.replace(/[^\w]/g, '_');
       const techStr = rel.technology ? `, "${rel.technology}"` : '';
       
-      lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr})`);
+      // Create a unique key for this relationship
+      const relKey = `${sourceId}-${targetId}-${rel.description}`;
+      
+      // Only add if we haven't seen this relationship before
+      if (!processedRels.has(relKey)) {
+        processedRels.add(relKey);
+        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr})`);
+      }
     }
   });
   lines.push('');
@@ -97,8 +118,8 @@ export const generateDiagramSVG = async (diagram: C4Diagram): Promise<string> =>
   // Footer
   lines.push('@enduml');
 
-  // Generate SVG
-  return await generateSVG(lines.join('\n'));
+  // Generate PNG
+  return await generateDiagram(lines.join('\n'));
 };
 
 /**
@@ -106,73 +127,71 @@ export const generateDiagramSVG = async (diagram: C4Diagram): Promise<string> =>
  * Used for initializing a new diagram workspace
  * 
  * @param diagram Diagram metadata
- * @returns SVG markup as a string
+ * @returns PNG diagram as a Buffer
  */
-export const generateEmptyDiagramSVG = async (diagram: C4Diagram): Promise<string> => {
+export const generateEmptyDiagram = async (diagram: C4Diagram): Promise<string> => {
   const lines: string[] = [];
   
   // Header
   lines.push('@startuml');
-  lines.push('!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
-  lines.push('');
-
-  // Basic diagram settings
-  lines.push('LAYOUT_TOP_DOWN()');
-  lines.push('HIDE_STEREOTYPE()');
+  lines.push('!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
   lines.push('');
   
-  // Title and description
+  // Title and empty diagram note
   lines.push(`title ${diagram.name}`);
   if (diagram.description) {
-    lines.push(`description ${diagram.description}`);
+    lines.push('');
+    lines.push(`note as DiagramDescription`);
+    lines.push(diagram.description);
+    lines.push('end note');
   }
-  lines.push('');
-  
-  // Empty diagram note
-  lines.push('note "New C4 Context Diagram\\nClick the hammer icon to start adding elements!" as EmptyNote');
   lines.push('');
   
   // Footer
   lines.push('@enduml');
 
-  // Generate SVG
-  return await generateSVG(lines.join('\n'));
+  // Generate PNG
+  return await generateDiagram(lines.join('\n'));
 };
 
 /**
- * Writes SVG output to the filesystem
- * Uses a consistent directory structure and naming convention
+ * File output information for saved diagrams
  */
-export interface SvgFileOutput {
-    absolutePath: string;
-    relativePath: string;
-    timestamp: string;
+export interface DiagramFileOutput {
+  absolutePath: string;
+  relativePath: string;
+  timestamp: string;
 }
 
-export const writeSvgToFile = async (diagramId: string, svg: string): Promise<SvgFileOutput> => {
-    try {
-        // Use output directory at app root
-        const outputDir = path.join(getAppRoot(), 'output', 'svg');
-        
-        // Ensure output directory exists
-        await fs.mkdir(outputDir, { recursive: true });
-        
-        // Create SVG filename using diagram ID and timestamp
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `${diagramId}-${timestamp}.svg`;
-        const filepath = path.join(outputDir, filename);
-        
-        // Write SVG file
-        await fs.writeFile(filepath, svg, 'utf8');
-        
-        // Return both absolute and relative paths for maximum flexibility
-        return {
-            absolutePath: filepath,
-            relativePath: path.relative(getAppRoot(), filepath),
-            timestamp
-        };
-    } catch (error) {
-        console.error('Error writing SVG file:', error);
-        throw error;
-    }
+/**
+ * Writes diagram PNG output to the filesystem
+ * Uses a consistent directory structure and naming convention
+ */
+export const writeDiagramToFile = async (diagramId: string, base64Data: string): Promise<DiagramFileOutput> => {
+  try {
+    // Use output directory at app root
+    const outputDir = path.join(getAppRoot(), 'diagrams');
+    
+    // Ensure output directory exists
+    await fs.mkdir(outputDir, { recursive: true });
+    
+    // Create filename using diagram ID and timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${diagramId}-${timestamp}.png`;
+    const filepath = path.join(outputDir, filename);
+    
+    // Convert base64 back to binary and write PNG file
+    const buffer = Buffer.from(base64Data, 'base64');
+    await fs.writeFile(filepath, buffer);
+    
+    // Return path info for maximum flexibility
+    return {
+      absolutePath: filepath,
+      relativePath: path.relative(getAppRoot(), filepath),
+      timestamp
+    };
+  } catch (error) {
+    console.error('Error writing diagram file:', error);
+    throw error;
+  }
 };
