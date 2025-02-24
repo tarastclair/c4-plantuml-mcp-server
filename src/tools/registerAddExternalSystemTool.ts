@@ -72,10 +72,15 @@ export const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb):
           throw new Error(`Diagram not found after adding external system: ${diagramId}`);
         }
 
-        // Generate and write the new diagram image
-        const image = await generateDiagramFromState(updatedDiagram);
-        await db.cacheDiagram(diagramId, image);
-        await writeDiagramToFile(diagramId, image);
+        try {
+          // Generate and write the new diagram image
+          const image = await generateDiagramFromState(updatedDiagram);
+          await db.cacheDiagram(diagramId, image);
+          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+        } catch (diagramError) {
+          console.warn(`Failed to generate diagram for external system ${externalSystem.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          // We'll continue without the diagram - the workflow is more important than the visualization
+        }
 
         const nextState = updatedDiagram.elements.filter(e => e.type === 'external-system').length === 0
           ? DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION // First external system - stay in external system identification

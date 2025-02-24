@@ -38,9 +38,14 @@ export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): v
         // Create a new blank diagram
         const diagram = await db.createDiagram(title, description);
 
-        // Generate initial empty diagram
-        const svg = await generateEmptyDiagram(diagram);
-        await db.cacheDiagram(diagram.id, svg);
+        try {
+          // Generate initial empty diagram
+          const svg = await generateEmptyDiagram(diagram);
+          await db.cacheDiagram(diagram.id, svg);
+        } catch (diagramError) {
+          console.warn(`Failed to generate initial diagram, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          // We'll continue without the diagram - the workflow is more important than the visualization
+        }
 
         // Get initial workflow state (created during diagram creation)
         const initialState = await db.getWorkflowState(diagram.id);

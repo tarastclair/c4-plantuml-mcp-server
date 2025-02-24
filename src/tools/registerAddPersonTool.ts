@@ -72,10 +72,15 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
           throw new Error(`Diagram not found after adding person: ${diagramId}`);
         }
 
-        // Generate and write the new diagram image
-        const image = await generateDiagramFromState(updatedDiagram);
-        await db.cacheDiagram(diagramId, image);
-        await writeDiagramToFile(diagramId, image);
+        try {
+          // Generate and write the new diagram image
+          const image = await generateDiagramFromState(updatedDiagram);
+          await db.cacheDiagram(diagramId, image);
+          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+        } catch (diagramError) {
+          console.warn(`Failed to generate diagram for person ${person.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          // We'll continue without the diagram - the workflow is more important than the visualization
+        }
 
         const nextState = updatedDiagram.elements.filter(e => e.type === 'person').length === 0
           ? DiagramWorkflowState.ACTOR_DISCOVERY // First person - stay in actor discovery

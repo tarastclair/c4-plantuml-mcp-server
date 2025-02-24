@@ -92,10 +92,15 @@ export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb)
           throw new Error(`Diagram not found after updating relationship: ${diagramId}`);
         }
 
-        // Generate and write the new diagram image
-        const image = await generateDiagramFromState(updatedDiagram);
-        await db.cacheDiagram(diagramId, image);
-        await writeDiagramToFile(diagramId, image);
+        try {
+          // Generate and write the new diagram image
+          const image = await generateDiagramFromState(updatedDiagram);
+          await db.cacheDiagram(diagramId, image);
+          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+        } catch (diagramError) {
+          console.warn(`Failed to generate diagram after updating relationship ${relationshipId}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          // We'll continue without the diagram - the workflow is more important than the visualization
+        }
 
         // Update workflow state to actor discovery
         const updatedState = await updateWorkflowState(db, diagramId, DiagramWorkflowState.REFINEMENT);

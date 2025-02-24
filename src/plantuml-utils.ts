@@ -20,27 +20,86 @@ export const encodePlantUML = (puml: string): string => {
 };
 
 /**
+ * Sleep function for retry mechanism
+ * @param ms Milliseconds to sleep
+ */
+const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+/**
  * Generates a PNG diagram from PlantUML markup by calling the public PlantUML server
+ * Implements retry logic with exponential backoff for intermittent server issues
  * 
  * @param puml PlantUML markup to render
- * @returns PNG data as a Buffer
+ * @param maxRetries Maximum number of retry attempts (default: 3)
+ * @param initialDelay Initial delay in ms between retries (default: 500ms)
+ * @returns PNG data as a base64 string
  */
-export const generateDiagram = async (puml: string): Promise<string> => {
+export const generateDiagram = async (
+  puml: string,
+  maxRetries = 3,
+  initialDelay = 500
+): Promise<string> => {
   const encoded = encodePlantUML(puml);
+  let lastError: Error | null = null;
   
-  try {
-    const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {
-      responseType: 'arraybuffer'
-    });
-    return Buffer.from(response.data).toString('base64');
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      console.error('PlantUML Server Error:');
-      console.error('Status:', error.response.status);
-      console.error('Headers:', error.response.headers);
+  // Try multiple times with exponential backoff
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // If this isn't the first attempt, log that we're retrying
+      if (attempt > 0) {
+        // console.log(`Retrying PlantUML diagram generation (attempt ${attempt} of ${maxRetries})`);
+      }
+      
+      const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {
+        responseType: 'arraybuffer',
+        timeout: 10000 // 10 second timeout to avoid hanging
+      });
+      
+      return Buffer.from(response.data).toString('base64');
+    } catch (error: any) {
+      lastError = error;
+      
+      // Log detailed error information
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const statusText = error.response?.statusText || '';
+        console.error(`PlantUML Server Error (attempt ${attempt + 1}/${maxRetries + 1}):`);
+        console.error(`Status: ${status} ${statusText}`);
+        
+        // Only worth retrying certain types of errors
+        const shouldRetry = !status || // network error
+          status === 408 || // request timeout
+          status === 429 || // too many requests
+          status === 500 || // server error
+          status === 502 || // bad gateway
+          status === 503 || // service unavailable
+          status === 504;   // gateway timeout
+        
+        if (!shouldRetry || attempt >= maxRetries) {
+          // Don't retry client errors or if we've used all our retries
+          const errorMessage = `PlantUML server error: HTTP ${status} ${statusText}`;
+          throw new Error(errorMessage);
+        }
+      } else {
+        console.error(`PlantUML generation error (attempt ${attempt + 1}/${maxRetries + 1}):`, error.message);
+        
+        if (attempt >= maxRetries) {
+          // We've used all our retries
+          throw new Error(`Failed to generate diagram: ${error.message}`);
+        }
+      }
+      
+      // Calculate backoff delay with jitter to avoid thundering herd
+      const delay = initialDelay * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
+      // console.log(`Waiting ${Math.round(delay)}ms before retry...`);
+      await sleep(delay);
     }
-    throw error;
   }
+  
+  // This should never happen due to the error handling above, but TypeScript wants it
+  throw lastError || new Error('Failed to generate diagram after retries');
 };
 
 /**
@@ -131,6 +190,7 @@ export const generateEmptyDiagram = async (diagram: C4Diagram): Promise<string> 
   // Header
   lines.push('@startuml');
   lines.push('!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
+  lines.push('HIDE_STEREOTYPE()');
   lines.push('');
   
   // Title and empty diagram note
@@ -156,14 +216,23 @@ export const generateEmptyDiagram = async (diagram: C4Diagram): Promise<string> 
 export interface DiagramFileOutput {
   absolutePath: string;
   relativePath: string;
-  timestamp: string;
+  filename: string;
 }
 
 /**
- * Writes diagram PNG output to the filesystem
- * Uses a consistent directory structure and naming convention
+ * Writes diagram PNG output to the filesystem with a human-readable filename
+ * 
+ * @param diagramId ID of the diagram for database reference
+ * @param diagramName Human-readable name of the diagram
+ * @param diagramType Type of the diagram (e.g., 'context', 'container', 'component')
+ * @param base64Data Base64-encoded PNG data
+ * @returns File output information
  */
-export const writeDiagramToFile = async (diagramId: string, base64Data: string): Promise<DiagramFileOutput> => {
+export const writeDiagramToFile = async (
+  diagramName: string,
+  diagramType: string = 'context',
+  base64Data: string
+): Promise<DiagramFileOutput> => {
   try {
     // Use output directory at app root
     const outputDir = path.join(getAppRoot(), 'diagrams');
@@ -171,9 +240,15 @@ export const writeDiagramToFile = async (diagramId: string, base64Data: string):
     // Ensure output directory exists
     await fs.mkdir(outputDir, { recursive: true });
     
-    // Create filename using diagram ID and timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${diagramId}-${timestamp}.png`;
+    // Create a filename-safe version of the diagram name
+    const safeFileName = diagramName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace any non-alphanumeric chars with hyphens
+      .replace(/^-+|-+$/g, '')      // Remove leading/trailing hyphens
+      .substring(0, 50);             // Limit length to avoid super long filenames
+    
+    // Format: diagram-name-diagram-type.png
+    const filename = `${safeFileName}-${diagramType}-diagram.png`;
     const filepath = path.join(outputDir, filename);
     
     // Convert base64 back to binary and write PNG file
@@ -184,7 +259,7 @@ export const writeDiagramToFile = async (diagramId: string, base64Data: string):
     return {
       absolutePath: filepath,
       relativePath: path.relative(getAppRoot(), filepath),
-      timestamp
+      filename
     };
   } catch (error) {
     console.error('Error writing diagram file:', error);

@@ -67,9 +67,14 @@ export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): voi
           throw new Error(`Diagram not found after updating element: ${diagramId}`);
         }
 
-        const image = await generateDiagramFromState(updatedDiagram);
-        await db.cacheDiagram(diagramId, image);
-        await writeDiagramToFile(diagramId, image);
+        try {
+          const image = await generateDiagramFromState(updatedDiagram);
+          await db.cacheDiagram(diagramId, image);
+          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+        } catch (diagramError) {
+          console.warn(`Failed to generate diagram after updating element ${elementId}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          // We'll continue without the diagram - the workflow is more important than the visualization
+        }
 
         // Update workflow state - stay in refinement state
         const updatedState = await updateWorkflowState(db, diagramId, DiagramWorkflowState.REFINEMENT);
