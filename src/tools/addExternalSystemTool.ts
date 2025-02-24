@@ -6,21 +6,21 @@ import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMa
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
- * Implementation of add-person tool with nextPrompt workflow support
- * Creates a person/actor element and updates the diagram
+ * Implementation of add-external-system tool with nextPrompt workflow support
+ * Creates an external system element and updates the diagram
  */
-export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void => {
+export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
-    "add-person",
+    "add-external-system",
     `Add a person/actor to the C4 diagram.
     
     Required Input Fields:
     - diagramId: String (UUID from createC4Diagram)
-    - name: String (Name of the person/actor)
-    - description: String (Description of the person/actor)
+    - name: String (Name of the external system)
+    - description: String (Description of the external system)
 
     Optional Input Fields:
-    - systemId: String (UUID of the system this person interacts with)
+    - systemId: String (Optional UUID of the core system this external system interacts with)
     
     The response will include unique IDs that you'll need for all subsequent operations,
     as well as a state object that will direct you to the appropriate next step to take.
@@ -32,9 +32,9 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
-      name: z.string().describe("Name of the person/actor"),
-      description: z.string().describe("Description of the person/actor"),
-      systemId: z.string().optional().describe("Optional ID of the system this person interacts with")
+      name: z.string().describe("Name of the external system"),
+      description: z.string().describe("Description of the external system"),
+      systemId: z.string().optional().describe("Optional UUID of the core system this external system interacts with")
     },
     async ({ diagramId, name, description, systemId }, extra) => {
       try {
@@ -43,9 +43,9 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
           throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID`);
         }
 
-        // Add the person element
-        const person = await db.addElement(diagramId, {
-          type: 'person',
+        // Add the external system element
+        const externalSystem = await db.addElement(diagramId, {
+          type: 'external-system',
           name,
           description
         });
@@ -60,8 +60,8 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
 
           // Create relationship
           await db.addRelationship(diagramId, {
-            sourceId: person.id,
-            targetId: systemId,
+            sourceId: systemId,
+            targetId: externalSystem.id,
             description: "Uses"
           });
         }
@@ -69,7 +69,7 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
         // Generate updated diagram
         const updatedDiagram = await db.getDiagram(diagramId);
         if (!updatedDiagram) {
-          throw new Error(`Diagram not found after adding person: ${diagramId}`);
+          throw new Error(`Diagram not found after adding external system: ${diagramId}`);
         }
 
         try {
@@ -78,14 +78,14 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram for person ${person.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
+          console.warn(`Failed to generate diagram for external system ${externalSystem.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
           // We'll continue without the diagram - the workflow is more important than the visualization
         }
 
-        const nextState = updatedDiagram.elements.filter(e => e.type === 'person').length === 0
-          ? DiagramWorkflowState.ACTOR_DISCOVERY // First person - stay in actor discovery
-          : DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION; // Multiple people - move to external systems
-
+        const nextState = updatedDiagram.elements.filter(e => e.type === 'external-system').length === 0
+          ? DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION // First external system - stay in external system identification
+          : DiagramWorkflowState.RELATIONSHIP_DEFINITION; // Multiple external systems - move to relationship definition
+        
         // Update workflow state to actor discovery
         const updatedState = await updateWorkflowState(db, diagramId, nextState);
         if (!updatedState) {
@@ -94,13 +94,13 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
 
         let baseMessage = ''
         if (systemId) {
-          baseMessage = `Created new person (UUID: ${person.id}) who interacts with system (UUID: ${systemId}).`;
+          baseMessage = `Created new external system (UUID: ${externalSystem.id}) who interacts with system (UUID: ${systemId}).`;
         } else {
-          baseMessage = `Created new person (UUID: ${person.id}).`;
+          baseMessage = `Created new external system (UUID: ${externalSystem.id}).`;
         }
-        const message = nextState === DiagramWorkflowState.ACTOR_DISCOVERY
-          ? `${baseMessage} Now we need to determine whether there any other users or actors who interact with the core system.`
-          : `${baseMessage} Now we need to identify any external systems that interact with the core system.`;
+        const message = nextState === DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION
+          ? "Now we need to determine whether there are any other external systems that interact with the core system."
+          : "Now we need to define the relationships between these elements.";
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
@@ -111,7 +111,7 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
           entityIds: entityMappings
         });
       } catch (error) {
-        return createErrorResponse(`Error adding person: ${getErrorMessage(error)}`);
+        return createErrorResponse(`Error adding external system: ${getErrorMessage(error)}`);
       }
     }
   );

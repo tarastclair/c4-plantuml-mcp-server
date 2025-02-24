@@ -9,7 +9,7 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
  * Implementation of add-relationship tool with nextPrompt workflow support
  * Creates a relationship between elements and updates the diagram
  */
-export const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): void => {
+export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "add-relationship",
     `Add a relationship between elements in the C4 diagram.

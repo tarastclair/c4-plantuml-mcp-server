@@ -8,7 +8,7 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
  * Implementation of navigate-workflow tool
  * Allows for non-linear navigation through the workflow
  */
-export const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): void => {
+export const navigateWorkflowTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "navigate-workflow",
     `Navigate to a different step in the guided workflow.

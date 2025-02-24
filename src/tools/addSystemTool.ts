@@ -9,7 +9,7 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
  * Implementation of add-system tool with nextPrompt workflow support
  * Creates a system element and updates the diagram
  */
-export const registerAddSystemTool = (server: McpServer, db: DiagramDb): void => {
+export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "add-system",
     `Add or update a system in the C4 diagram.

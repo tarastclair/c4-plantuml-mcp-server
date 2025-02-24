@@ -10,7 +10,7 @@ import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js"
  * Implementation of update-relationship tool for diagram refinement
  * Allows modifying existing relationships
  */
-export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void => {
+export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "update-relationship",
     `Update an existing relationship in the C4 diagram

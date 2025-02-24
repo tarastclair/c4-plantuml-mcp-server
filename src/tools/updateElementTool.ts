@@ -10,7 +10,7 @@ import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js"
  * Implementation of update-element tool for diagram refinement
  * Allows modifying existing elements
  */
-export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
+export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "update-element",
     `Update an existing element in the C4 diagram.

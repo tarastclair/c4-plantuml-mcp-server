@@ -53,7 +53,7 @@ export const initializeDatabase = async (customDbPath?: string): Promise<Diagram
  */
 export const createServer = (): McpServer => {
   return new McpServer({
-    name: "c4-diagrams",
-    version: "1.0.0",
+    name: "c4-diagram-server",
+    version: "0.1.0",
   });
 };

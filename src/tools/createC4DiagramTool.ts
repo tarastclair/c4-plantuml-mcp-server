@@ -10,10 +10,18 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
  * This tool creates a new diagram and kicks off the guided workflow
  */
 // TODO: Expand scope beyond just Context (C1) diagrams to C2-C4 as well
-export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => {
+export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
-    "createC4Diagram",
+    "create-context-diagram",
     `Create a new C4 Context diagram and start the guided modeling process.
+
+    A Context diagram (C4 Level 1) shows your system in its environment, focusing on people and systems rather than technologies or implementation details. Use this when you need a high-level overview that stakeholders can easily understand.
+
+    Benefits:
+    - Guided workflow that walks you through the Context diagramming process
+    - Automatic PlantUML code generation without needing to write syntax
+    - Shows your system, its users, and external system dependencies
+    - Perfect for explaining the big picture to executives and stakeholders
     
     Required Input Fields:
     - title: String (The name of your system/diagram)
