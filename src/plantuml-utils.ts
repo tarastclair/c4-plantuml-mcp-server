@@ -26,11 +26,7 @@ export const encodePlantUML = (puml: string): string => {
  * @returns PNG data as a Buffer
  */
 export const generateDiagram = async (puml: string): Promise<string> => {
-  console.log('Debug - PlantUML Content:');
-  console.log(puml);
-  
   const encoded = encodePlantUML(puml);
-  console.log('\nDebug - Encoded URL:', encoded);
   
   try {
     const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {

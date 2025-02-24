@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateEmptyDiagram } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
@@ -25,10 +25,10 @@ export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): v
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Created new diagram (UUID: <DIAGRAM_UUID>). We need to start by identifying the core system. What is it called, and what does it do?"`,
+    - entityIds: Object (Mappings of entity IDs to their types)`,
     {
       title: z.string().describe("Title for the new diagram"),
       description: z.string().optional().describe("Optional description of what the diagram represents")
@@ -56,9 +56,14 @@ export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): v
 
         const message = `Created new diagram (UUID: ${diagram.id}). We need to start by identifying the core system. What is it called, and what does it do?`;
 
+        // For a new diagram, the entity mappings will be empty, but we'll include them
+        // to maintain a consistent response structure
+        const entityMappings = buildEntityMappings(diagram);
+
         return createToolResponse(message, {
           diagramId: diagram.id,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error creating diagram: ${getErrorMessage(error)}`);

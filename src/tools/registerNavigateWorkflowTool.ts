@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { createToolResponse, getErrorMessage, createErrorResponse } from "../utils.js";
+import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
@@ -21,10 +21,10 @@ export const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): 
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "We should identify or modify the core system. We need to determine what its called and what it does."`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("ID of the diagram"),
       targetState: z.enum([
@@ -76,9 +76,13 @@ export const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): 
             break;
         }
 
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(diagram);
+
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error navigating workflow: ${getErrorMessage(error)}`);

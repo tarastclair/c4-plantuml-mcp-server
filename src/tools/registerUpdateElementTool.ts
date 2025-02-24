@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { C4Element, ElementType } from "../types-and-interfaces.js";
-import { createToolResponse, getErrorMessage, createErrorResponse } from "../utils.js";
+import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
 import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js";
 
 /**
@@ -28,10 +28,10 @@ export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): voi
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Element <ELEMENT_UUID> updated successfully. Should we make any other refinements?"`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
       elementId: z.string().describe("UUID of the element to update"),
@@ -79,9 +79,13 @@ export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): voi
 
         const message = `Element "${element.id}" updated successfully. Should we make any other refinements?`;
 
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(updatedDiagram);
+
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error updating element: ${getErrorMessage(error)}`);

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { C4Relationship } from "../types-and-interfaces.js";
-import { createToolResponse, getErrorMessage, createErrorResponse } from "../utils.js";
+import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
 import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js";
 
 /**
@@ -29,10 +29,10 @@ export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb)
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Relationship <RELATIONSHIP_UUID> from <SOURCE_UUID> to <TARGET_UUID> updated successfully. Should we make any other refinements?"`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
       relationshipId: z.string().describe("UUID of the relationship to update"),
@@ -103,11 +103,28 @@ export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb)
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
 
-        const message = `Relationship ${relationship.id} from ${sourceId} to ${targetId} updated successfully. Should we make any other refinements?`;
+        // Get source and target element names for a more descriptive message
+        const updatedRelationship = updatedDiagram.relationships.find(r => r.id === relationshipId);
+        if (!updatedRelationship) {
+          throw new Error(`Relationship not found after update: ${relationshipId}`);
+        }
+        
+        const sourceElement = updatedDiagram.elements.find(e => e.id === updatedRelationship.sourceId);
+        const targetElement = updatedDiagram.elements.find(e => e.id === updatedRelationship.targetId);
+        
+        // Create a user-friendly response message
+        const sourceName = sourceElement?.name || 'unknown';
+        const targetName = targetElement?.name || 'unknown';
+        
+        const message = `Relationship ${relationship.id} from ${sourceName} (${updatedRelationship.sourceId}) to ${targetName} (${updatedRelationship.targetId}) updated successfully. Should we make any other refinements?`;
+
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error updating relationship: ${getErrorMessage(error)}`);

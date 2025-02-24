@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
@@ -23,10 +23,10 @@ export const registerAddSystemTool = (server: McpServer, db: DiagramDb): void =>
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Created new system (UUID: <SYSTEM_UUID>). Now we need to identify the users or actors who interact with this system."`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram from createC4Diagram"),
       name: z.string().describe("Name of the system"),
@@ -74,9 +74,13 @@ export const registerAddSystemTool = (server: McpServer, db: DiagramDb): void =>
           ? `${baseMessage} Now we need to identify the users or actors who interact with this system.`
           : `${baseMessage} Now we need to identify the external systems that interact with your core system.`;
 
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(updatedDiagram);
+        
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error adding system: ${getErrorMessage(error)}`);

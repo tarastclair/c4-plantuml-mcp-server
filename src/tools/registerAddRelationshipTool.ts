@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
@@ -27,10 +27,10 @@ export const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): v
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Relationship <RELATIONSHIP_UUID> added from <SOURCE_UUID> to <TARGET_UUID>. Are there any other relationships to define?"`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("ID of the diagram"),
       sourceId: z.string().describe("ID of the source element"),
@@ -77,11 +77,23 @@ export const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): v
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
 
-        const message = `Relationship ${relationship.id} added from ${sourceId} to ${targetId}. Are there any other relationships to define?`;
+        // Get source and target element names for a more descriptive message
+        const sourceElement = updatedDiagram.elements.find(e => e.id === sourceId);
+        const targetElement = updatedDiagram.elements.find(e => e.id === targetId);
+        
+        // Create a user-friendly response message
+        const sourceName = sourceElement?.name || 'unknown';
+        const targetName = targetElement?.name || 'unknown';
+        
+        const message = `Relationship ${relationship.id} added from ${sourceName} (${sourceId}) to ${targetName} (${targetId}). Are there any other relationships to define?`;
+
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error adding relationship: ${getErrorMessage(error)}`);

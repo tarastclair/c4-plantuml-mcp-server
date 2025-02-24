@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
@@ -26,10 +26,10 @@ export const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb):
     as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
+    - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
     - workflowState: Object (The current state of the workflow)
-    
-    Response Message Example: "Created new external system (UUID: <EXTERNAL_SYSTEM_UUID>) who interacts with system (UUID: <SYSTEM_UUID>). Now we need to determine whether there are any other external systems that interact with the core system."`,
+    - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
       name: z.string().describe("Name of the external system"),
@@ -97,9 +97,13 @@ export const registerAddExternalSystemTool = (server: McpServer, db: DiagramDb):
           ? "Now we need to determine whether there are any other external systems that interact with the core system."
           : "Now we need to define the relationships between these elements.";
 
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(updatedDiagram);
+
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState
+          workflowState: updatedState,
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error adding external system: ${getErrorMessage(error)}`);
