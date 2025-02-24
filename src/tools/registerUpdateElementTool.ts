@@ -13,10 +13,28 @@ import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js"
 export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "update-element",
-    "Update an existing element in the C4 diagram",
+    `Update an existing element in the C4 diagram.
+    
+    Required Input Fields:
+    - diagramId: String (UUID from createC4Diagram)
+    - elementId: String (UUID of the element to update)
+
+    Optional Input Fields:
+    - name: String (New name for the element)
+    - description: String (New description for the element)
+    - type: String (New type for the element, e.g., 'system', 'person', 'external-system')
+    
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
+    
+    Response Fields:
+    - diagramId: String (UUID of the diagram)
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Element <ELEMENT_UUID> updated successfully. Should we make any other refinements?"`,
     {
-      diagramId: z.string().describe("ID of the diagram"),
-      elementId: z.string().describe("ID of the element to update"),
+      diagramId: z.string().describe("UUID of the diagram"),
+      elementId: z.string().describe("UUID of the element to update"),
       name: z.string().optional().describe("New name for the element"),
       description: z.string().optional().describe("New description for the element"),
       type: z.enum(['system', 'person', 'external-system']).optional().describe("New type for the element")
@@ -59,7 +77,7 @@ export const registerUpdateElementTool = (server: McpServer, db: DiagramDb): voi
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
 
-        const message = `Element "${element.id}" updated successfully. Would you like to make any other refinements?`;
+        const message = `Element "${element.id}" updated successfully. Should we make any other refinements?`;
 
         return createToolResponse(message, {
           diagramId,

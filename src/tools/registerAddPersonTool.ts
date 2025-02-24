@@ -18,18 +18,20 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
     - diagramId: String (UUID from createC4Diagram)
     - name: String (Name of the person/actor)
     - description: String (Description of the person/actor)
-    - systemId: String (Optional UUID of the system this person interacts with)
+
+    Optional Input Fields:
+    - systemId: String (UUID of the system this person interacts with)
     
-    The response will include unique IDs that you'll need for all subsequent operations.
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
     - diagramId: String (UUID of the diagram)
-    - personId: String (UUID of the person/actor that was just created)
-    - svg: String (Base64-encoded SVG of the diagram)
-    - nextPrompt: String (You should proceed to this next step now)
-    - workflowState: Object (The current state of the workflow)`,
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Created new person (UUID: <PERSON_UUID) who interacts with system (UUID: <SYSTEM_UUID>). Now we need to determine whether there any other users or actors who interact with the core system."`,
     {
-      diagramId: z.string().describe("ID of the diagram"),
+      diagramId: z.string().describe("UUID of the diagram"),
       name: z.string().describe("Name of the person/actor"),
       description: z.string().describe("Description of the person/actor"),
       systemId: z.string().optional().describe("Optional ID of the system this person interacts with")
@@ -87,13 +89,13 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
 
         let baseMessage = ''
         if (systemId) {
-          baseMessage = `Created new person (ID: ${person.id}) who interacts with system (ID: ${systemId}).`;
+          baseMessage = `Created new person (UUID: ${person.id}) who interacts with system (UUID: ${systemId}).`;
         } else {
-          baseMessage = `Created new person (ID: ${person.id}).`;
+          baseMessage = `Created new person (UUID: ${person.id}).`;
         }
         const message = nextState === DiagramWorkflowState.ACTOR_DISCOVERY
-          ? `${baseMessage} Great! Are there any other users or actors who interact with the system?`
-          : `${baseMessage} Now, let's identify any external systems that interact with your core system.`;
+          ? `${baseMessage} Now we need to determine whether there any other users or actors who interact with the core system.`
+          : `${baseMessage} Now we need to identify any external systems that interact with the core system.`;
 
         return createToolResponse(message, {
           diagramId,

@@ -19,22 +19,14 @@ export const registerAddSystemTool = (server: McpServer, db: DiagramDb): void =>
     - name: String (Name of the system)
     - description: String (Description of what the system does)
     
-    Input example:
-    {
-      "diagramId": "b7a405e2-4353-4c67-ba6d-143eaf35e538",
-      "name": "Payment Processing System",
-      "description": "Handles all payment transactions and integrates with external payment providers"
-    }
-    
-    The response will include unique IDs that you'll need for all subsequent operations.
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
     - diagramId: String (UUID of the diagram)
-    - systemId: String (UUID of the system that was just created)
-    - systemName: String (Name of the system)
-    - svg: String (Base64-encoded SVG of the diagram)
-    - nextPrompt: String (You should proceed to this next step now)
-    - workflowState: Object (The current state of the workflow)`,
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Created new system (UUID: <SYSTEM_UUID>). Now we need to identify the users or actors who interact with this system."`,
     {
       diagramId: z.string().describe("UUID of the diagram from createC4Diagram"),
       name: z.string().describe("Name of the system"),
@@ -77,10 +69,10 @@ export const registerAddSystemTool = (server: McpServer, db: DiagramDb): void =>
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
         
-        const baseMessage = `Created new system (ID: ${system.id}).`;
+        const baseMessage = `Created new system (UUID: ${system.id}).`;
         const message = nextState === DiagramWorkflowState.ACTOR_DISCOVERY
-          ? `${baseMessage} Now, let's identify the users or actors who interact with this system.`
-          : `${baseMessage} Now let's identify the external systems that interact with your core system.`;
+          ? `${baseMessage} Now we need to identify the users or actors who interact with this system.`
+          : `${baseMessage} Now we need to identify the external systems that interact with your core system.`;
 
         return createToolResponse(message, {
           diagramId,

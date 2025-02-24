@@ -11,7 +11,20 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
 export const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "navigate-workflow",
-    "Navigate to a different step in the guided workflow",
+    `Navigate to a different step in the guided workflow.
+    
+    Required Input Fields:
+    - diagramId: String (UUID from createC4Diagram)
+    - targetState: String (The workflow state to navigate to)
+    
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
+    
+    Response Fields:
+    - diagramId: String (UUID of the diagram)
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "We should identify or modify the core system. We need to determine what its called and what it does."`,
     {
       diagramId: z.string().describe("ID of the diagram"),
       targetState: z.enum([
@@ -41,25 +54,25 @@ export const registerNavigateWorkflowTool = (server: McpServer, db: DiagramDb): 
         let message = "";
         switch (targetState) {
           case DiagramWorkflowState.SYSTEM_IDENTIFICATION:
-            message = "Let's identify or modify the core system. What is it called, and what does it do?";
+            message = "We should identify or modify the core system. We need to determine what its called and what it does.";
             break;
           case DiagramWorkflowState.ACTOR_DISCOVERY:
-            message = "Let's identify or modify the users or actors. Who interacts with this system?";
+            message = "We need to identify or modify the users and actors. Who interacts with this system?";
             break;
           case DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION:
-            message = "Let's identify or modify external systems. What other systems does this system interact with?";
+            message = "We need to identify or modify external systems. What other systems does this system interact with?";
             break;
           case DiagramWorkflowState.RELATIONSHIP_DEFINITION:
-            message = "Let's define or modify relationships between elements. How do these components interact?";
+            message = "We need to define or modify relationships between elements. How do these components interact?";
             break;
           case DiagramWorkflowState.REFINEMENT:
-            message = "Let's refine the diagram. What would you like to improve?";
+            message = "We need to refine the diagram. Where are there opportunities for improvement?";
             break;
           case DiagramWorkflowState.COMPLETE:
-            message = "The diagram is complete. You can export it or continue making refinements.";
+            message = "The diagram is complete.";
             break;
           default:
-            message = "What would you like to work on next?";
+            message = "What is the next most-logical part of the architecture that we need to identify or modify?";
             break;
         }
 

@@ -13,12 +13,31 @@ import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js"
 export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "update-relationship",
-    "Update an existing relationship in the C4 diagram",
+    `Update an existing relationship in the C4 diagram
+    
+    Required Input Fields:
+    - diagramId: String (UUID from createC4Diagram)
+    - relationshipId: String (UUID of the relationship to update
+
+    Optional Input Fields:
+    - sourceId: String (UUID of the new source element)
+    - targetId: String (UUID of the new target element)
+    - description: String (New description for the relationship)
+    - technology: String (New technology used in the relationship)
+    
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
+    
+    Response Fields:
+    - diagramId: String (UUID of the diagram)
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Relationship <RELATIONSHIP_UUID> from <SOURCE_UUID> to <TARGET_UUID> updated successfully. Should we make any other refinements?"`,
     {
-      diagramId: z.string().describe("ID of the diagram"),
-      relationshipId: z.string().describe("ID of the relationship to update"),
-      sourceId: z.string().optional().describe("New source element ID"),
-      targetId: z.string().optional().describe("New target element ID"),
+      diagramId: z.string().describe("UUID of the diagram"),
+      relationshipId: z.string().describe("UUID of the relationship to update"),
+      sourceId: z.string().optional().describe("UUID of the new source element"),
+      targetId: z.string().optional().describe("UUID of the new target element"),
       description: z.string().optional().describe("New description for the relationship"),
       technology: z.string().optional().describe("New technology used in the relationship")
     },
@@ -84,7 +103,7 @@ export const registerUpdateRelationshipTool = (server: McpServer, db: DiagramDb)
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
 
-        const message = `Relationship from ${sourceId} to ${targetId} updated successfully. Would you like to make any other refinements?`;
+        const message = `Relationship ${relationship.id} from ${sourceId} to ${targetId} updated successfully. Should we make any other refinements?`;
 
         return createToolResponse(message, {
           diagramId,

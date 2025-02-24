@@ -13,25 +13,22 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
 export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "createC4Diagram",
-    `Create a new C4 Context diagram and starts the guided modeling process.
+    `Create a new C4 Context diagram and start the guided modeling process.
     
     Required Input Fields:
     - title: String (The name of your system/diagram)
-    - description: String (optional, A brief explanation of what the diagram represents)
+
+    Optional Input Fields:
+    - description: String (A brief explanation of what the diagram represents)
     
-    Input example:
-    {
-      "title": "E-commerce Platform",
-      "description": "Core system architecture for our online store"
-    }
-      
-    The response will include a unique ID for the diagram that you'll need for all subsequent operations.
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
     
     Response Fields:
-    - diagramId: String (UUID of the diagram that was just created; Example: "b7a405e2-4353-4c67-ba6d-143eaf35e538")
-    - svg: String (Base64-encoded SVG of the diagram)
-    - nextPrompt: String (You should proceed to this next step now)
-    - workflowState: Object (The current state of the workflow)`,
+    - diagramId: String (UUID of the diagram)
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Created new diagram (UUID: <DIAGRAM_UUID>). We need to start by identifying the core system. What is it called, and what does it do?"`,
     {
       title: z.string().describe("Title for the new diagram"),
       description: z.string().optional().describe("Optional description of what the diagram represents")
@@ -57,7 +54,7 @@ export const registerCreateC4DiagramTool = (server: McpServer, db: DiagramDb): v
           throw new Error(`No workflow state found for diagram: ${diagram.id}`);
         }
 
-        const message = `Created new diagram (ID: ${diagram.id}). Let's start by identifying the core system. What is it called, and what does it do?`;
+        const message = `Created new diagram (UUID: ${diagram.id}). We need to start by identifying the core system. What is it called, and what does it do?`;
 
         return createToolResponse(message, {
           diagramId: diagram.id,

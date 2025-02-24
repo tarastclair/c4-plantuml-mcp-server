@@ -12,7 +12,25 @@ import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js"
 export const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "add-relationship",
-    "Add a relationship between elements in the C4 diagram",
+    `Add a relationship between elements in the C4 diagram.
+
+    Required Input Fields:
+    - diagramId: String (UUID from createC4Diagram)
+    - sourceId: String (UUID of the source element)
+    - targetId: String (UUID of the target element)
+    - description: String (Description of the relationship)
+
+    Optional Input Fields:
+    - technology: String (Optional technology used in the relationship)
+    
+    The response will include unique IDs that you'll need for all subsequent operations,
+    as well as a state object that will direct you to the appropriate next step to take.
+    
+    Response Fields:
+    - diagramId: String (UUID of the diagram)
+    - workflowState: Object (The current state of the workflow)
+    
+    Response Message Example: "Relationship <RELATIONSHIP_UUID> added from <SOURCE_UUID> to <TARGET_UUID>. Are there any other relationships to define?"`,
     {
       diagramId: z.string().describe("ID of the diagram"),
       sourceId: z.string().describe("ID of the source element"),
@@ -59,7 +77,7 @@ export const registerAddRelationshipTool = (server: McpServer, db: DiagramDb): v
           throw new Error(`No workflow state found for diagram: ${diagramId}`);
         }
 
-        const message = `Relationship ${relationship.id} added from ${sourceId} to ${targetId}. Are there any other relationships you'd like to define?`;
+        const message = `Relationship ${relationship.id} added from ${sourceId} to ${targetId}. Are there any other relationships to define?`;
 
         return createToolResponse(message, {
           diagramId,
