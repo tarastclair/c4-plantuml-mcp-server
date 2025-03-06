@@ -4,7 +4,6 @@ import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { C4Relationship } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
-import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js";
 
 /**
  * Implementation of update-relationship tool for diagram refinement
@@ -31,7 +30,6 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
@@ -98,14 +96,7 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram after updating relationship ${relationshipId}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagramId, DiagramWorkflowState.REFINEMENT);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
+          console.warn(`Failed to generate diagram after updating relationship ${relationshipId}: ${getErrorMessage(diagramError)}`);
         }
 
         // Get source and target element names for a more descriptive message
@@ -128,7 +119,6 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

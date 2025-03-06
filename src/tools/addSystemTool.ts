@@ -3,10 +3,8 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
- * Implementation of add-system tool with nextPrompt workflow support
  * Creates a system element and updates the diagram
  */
 export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
@@ -25,7 +23,6 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram from createC4Diagram"),
@@ -58,33 +55,17 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram for system ${system.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
+          console.warn(`Failed to generate diagram for system ${system.id}: ${getErrorMessage(diagramError)}`);
         }
 
-        // Determine next state based on current diagram state
-        const personCount = updatedDiagram.elements.filter(e => e.type === 'person').length;
-        const nextState: DiagramWorkflowState = personCount === 0
-          ? DiagramWorkflowState.ACTOR_DISCOVERY // First person - stay in actor discovery
-          : DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION; // Multiple people - move to external systems
-
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagramId, nextState);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
-        }
-        
         const baseMessage = `Created new system (UUID: ${system.id}).`;
-        const message = nextState === DiagramWorkflowState.ACTOR_DISCOVERY
-          ? `${baseMessage} Now we need to identify the users or actors who interact with this system.`
-          : `${baseMessage} Now we need to identify the external systems that interact with your core system.`;
+        const message = "Are there any other systems that we need to identify, or should we move onto identifing external systems?";
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
         
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

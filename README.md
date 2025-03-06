@@ -1,6 +1,6 @@
 # C4 Diagram MCP Server
 
-This project delivers an MCP server that provides a guided workflow for creating architectural diagrams using PlantUML. The server helps you build your diagrams through natural conversation while ensuring adherence to [C4 abstractions and diagram types](https://c4model.com/).
+This project delivers an MCP server that enables creating architectural diagrams using PlantUML. The server helps you build your diagrams through natural conversation while ensuring adherence to [C4 abstractions and diagram types](https://c4model.com/).
 
 The server uses [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) by referencing their raw `.puml` files in the generated PUML syntax for your diagram(s).
 
@@ -8,7 +8,7 @@ Here is an example of a context diagram generated exclusively by Claude for this
 ![Context diagram for this code base](./doc/img/plantuml-mcp-server-context-diagram.png)
 
 ## Feature Roadmap
-- [ ] Support context diagram creation
+- [x] Support context diagram creation
 - [ ] Support system boundaries
 - [ ] Support bi-directional relationships
 - [ ] Support extended system types (Db, Queue)

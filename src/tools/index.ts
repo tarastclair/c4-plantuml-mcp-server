@@ -4,7 +4,6 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DiagramDb } from '../db.js';
-import { navigateWorkflowTool } from "./navigateWorkflowTool.js";
 import { updateElementTool } from "./updateElementTool.js";
 import { updateRelationshipTool } from "./updateRelationshipTool.js";
 import { createContextDiagramTool } from "./createC4DiagramTool.js";
@@ -20,7 +19,6 @@ import { addRelationshipTool } from "./addRelationshipTool.js";
  * @param db Database instance
  */
 export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
-  navigateWorkflowTool(server, db);
   updateElementTool(server, db);
   updateRelationshipTool(server, db);
   createContextDiagramTool(server, db);

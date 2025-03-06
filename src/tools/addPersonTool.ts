@@ -3,10 +3,8 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
- * Implementation of add-person tool with nextPrompt workflow support
  * Creates a person/actor element and updates the diagram
  */
 export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void => {
@@ -28,7 +26,6 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
@@ -78,18 +75,7 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram for person ${person.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        const nextState = updatedDiagram.elements.filter(e => e.type === 'person').length === 0
-          ? DiagramWorkflowState.ACTOR_DISCOVERY // First person - stay in actor discovery
-          : DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION; // Multiple people - move to external systems
-
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagramId, nextState);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
+          console.warn(`Failed to generate diagram for person ${person.id}: ${getErrorMessage(diagramError)}`);
         }
 
         let baseMessage = ''
@@ -98,17 +84,13 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
         } else {
           baseMessage = `Created new person (UUID: ${person.id}).`;
         }
-        const message = nextState === DiagramWorkflowState.ACTOR_DISCOVERY
-          ? `${baseMessage} Now we need to determine whether there any other users or actors who interact with the core system.`
-          // : `${baseMessage} Now we need to identify any external systems that interact with the core system.`;
-          : `${baseMessage} Stop! Now we need to ask the user if there are any other actors to consider.`;
+        const message = "Are there any other users or actors that need to identify, or should we move onto identifying other diagram elements?";
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

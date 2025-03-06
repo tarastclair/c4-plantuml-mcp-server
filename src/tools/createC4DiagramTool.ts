@@ -3,11 +3,10 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateEmptyDiagram } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
  * Primary entry point tool for guided C4 diagram creation
- * This tool creates a new diagram and kicks off the guided workflow
+ * This tool creates a new diagram
  */
 // TODO: Expand scope beyond just Context (C1) diagrams to C2-C4 as well
 export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void => {
@@ -18,7 +17,6 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
     A Context diagram (C4 Level 1) shows your system in its environment, focusing on people and systems rather than technologies or implementation details. Use this when you need a high-level overview that stakeholders can easily understand.
 
     Benefits:
-    - Guided workflow that walks you through the Context diagramming process
     - Automatic PlantUML code generation without needing to write syntax
     - Shows your system, its users, and external system dependencies
     - Perfect for explaining the big picture to executives and stakeholders
@@ -35,7 +33,6 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity IDs to their types)`,
     {
       title: z.string().describe("Title for the new diagram"),
@@ -51,20 +48,7 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
           const image = await generateEmptyDiagram(diagram);
           await db.cacheDiagram(diagram.id, image);
         } catch (diagramError) {
-          console.warn(`Failed to generate initial diagram, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        // Get initial workflow state (created during diagram creation)
-        const initialState = await db.getWorkflowState(diagram.id);
-        if (!initialState) {
-          throw new Error(`Failed to initialize workflow state for diagram: ${diagram.id}`);
-        }
-
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagram.id, DiagramWorkflowState.SYSTEM_IDENTIFICATION);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagram.id}`);
+          console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
 
         const message = `Created new diagram (UUID: ${diagram.id}). We need to start by identifying the core system. What is it called, and what does it do?`;
@@ -75,7 +59,6 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
         return createToolResponse(message, {
           diagramId: diagram.id,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

@@ -4,7 +4,6 @@ import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { C4Element, ElementType } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
-import { updateWorkflowState, DiagramWorkflowState } from "../workflow-state.js";
 
 /**
  * Implementation of update-element tool for diagram refinement
@@ -30,7 +29,6 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
@@ -72,14 +70,7 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram after updating element ${elementId}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        // Update workflow state - stay in refinement state
-        const updatedState = await updateWorkflowState(db, diagramId, DiagramWorkflowState.REFINEMENT);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
+          console.warn(`Failed to generate diagram after updating element ${elementId}: ${getErrorMessage(diagramError)}`);
         }
 
         const message = `Element "${element.id}" updated successfully. Should we make any other refinements?`;
@@ -89,7 +80,6 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

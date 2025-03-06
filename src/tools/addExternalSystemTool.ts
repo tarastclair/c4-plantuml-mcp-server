@@ -3,10 +3,8 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
- * Implementation of add-external-system tool with nextPrompt workflow support
  * Creates an external system element and updates the diagram
  */
 export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void => {
@@ -28,7 +26,6 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("UUID of the diagram"),
@@ -78,18 +75,7 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram for external system ${externalSystem.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        const nextState = updatedDiagram.elements.filter(e => e.type === 'external-system').length === 0
-          ? DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION // First external system - stay in external system identification
-          : DiagramWorkflowState.RELATIONSHIP_DEFINITION; // Multiple external systems - move to relationship definition
-        
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagramId, nextState);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
+          console.warn(`Failed to generate diagram for external system ${externalSystem.id}: ${getErrorMessage(diagramError)}`);
         }
 
         let baseMessage = ''
@@ -98,16 +84,13 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
         } else {
           baseMessage = `Created new external system (UUID: ${externalSystem.id}).`;
         }
-        const message = nextState === DiagramWorkflowState.EXTERNAL_SYSTEM_IDENTIFICATION
-          ? "Now we need to determine whether there are any other external systems that interact with the core system."
-          : "Now we need to define the relationships between these elements.";
+        const message = "Are there any other external systems that we need to identify or should we move onto identifying other diagram elements?";
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {

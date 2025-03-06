@@ -1,4 +1,3 @@
-import { WorkflowStateContext } from './workflow-state.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { C4Diagram, C4Element } from './types-and-interfaces.js';
 
@@ -12,11 +11,10 @@ export type EntityIDMapping = {
 
 /**
  * Tool response metadata that provides context for the client
- * Includes diagram ID, workflow state, and entity ID mappings
+ * Includes diagram ID, and entity ID mappings
  */
 export type ToolMetadata = {
   diagramId: string; // Must give the current diagramId
-  workflowState: WorkflowStateContext; // Must give the next step to take
   entityIds?: { // Must give the IDs of all entities in the diagram
     systems: EntityIDMapping;
     persons: EntityIDMapping;
@@ -39,7 +37,7 @@ export type ToolMetadata = {
 export const createToolResponse = (message: string, metadata: ToolMetadata): CallToolResult => {
   // Create the full response with message and metadata
   // The format is designed to be both human-readable and machine-parsable
-  const fullMessage = `${message}\n\n---\n\nResponse metadata for reference:\n\nDiagram ID: ${metadata.diagramId}\nWorkflow state: ${metadata.workflowState.currentState}`;
+  const fullMessage = `${message}\n\n---\n\nResponse metadata for reference:\n\nDiagram ID: ${metadata.diagramId}`;
   
   // Only add entity mappings section if they're provided
   let entitiesText = '';

@@ -3,10 +3,8 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { DiagramWorkflowState, updateWorkflowState } from "../workflow-state.js";
 
 /**
- * Implementation of add-relationship tool with nextPrompt workflow support
  * Creates a relationship between elements and updates the diagram
  */
 export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
@@ -29,7 +27,6 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - diagramId: String (UUID of the diagram)
-    - workflowState: Object (The current state of the workflow)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
       diagramId: z.string().describe("ID of the diagram"),
@@ -72,14 +69,7 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
           await db.cacheDiagram(diagramId, image);
           await writeDiagramToFile(updatedDiagram.name, 'context', image);
         } catch (diagramError) {
-          console.warn(`Failed to generate diagram for relationship ${relationship.id}, but continuing with workflow: ${getErrorMessage(diagramError)}`);
-          // We'll continue without the diagram - the workflow is more important than the visualization
-        }
-
-        // Update workflow state to actor discovery
-        const updatedState = await updateWorkflowState(db, diagramId, DiagramWorkflowState.RELATIONSHIP_DEFINITION);
-        if (!updatedState) {
-          throw new Error(`No workflow state found for diagram: ${diagramId}`);
+          console.warn(`Failed to generate diagram for relationship ${relationship.id}: ${getErrorMessage(diagramError)}`);
         }
 
         // Get source and target element names for a more descriptive message
@@ -97,7 +87,6 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
 
         return createToolResponse(message, {
           diagramId,
-          workflowState: updatedState,
           entityIds: entityMappings
         });
       } catch (error) {
