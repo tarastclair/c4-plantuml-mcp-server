@@ -48,8 +48,8 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
         try {
           // Generate initial empty diagram
-          const svg = await generateEmptyDiagram(diagram);
-          await db.cacheDiagram(diagram.id, svg);
+          const image = await generateEmptyDiagram(diagram);
+          await db.cacheDiagram(diagram.id, image);
         } catch (diagramError) {
           console.warn(`Failed to generate initial diagram, but continuing with workflow: ${getErrorMessage(diagramError)}`);
           // We'll continue without the diagram - the workflow is more important than the visualization
