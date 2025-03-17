@@ -8,11 +8,20 @@ import {
     C4Relationship, 
     DatabaseSchema, 
     DiagramStorage,
-    DiagramCache
+    DiagramCache,
+    Project,
+    DiagramType
 } from './types-and-interfaces.js';
 
 /**
- * Implements storage for C4 diagrams using lowdb
+ * Extended database schema to include projects
+ */
+export interface ExtendedDatabaseSchema extends DatabaseSchema {
+    projects: Project[];
+}
+
+/**
+ * Implements storage for C4 diagrams and projects using lowdb
  * 
  * We chose lowdb because:
  * 1. It provides atomic file operations
@@ -21,12 +30,16 @@ import {
  * 4. No complex setup required
  */
 export class DiagramDb implements DiagramStorage {
-    private db: Low<DatabaseSchema>;
+    private db: Low<ExtendedDatabaseSchema>;
 
     constructor(dbPath: string) {
         // Ensure we have a consistent db file location
-        const adapter = new JSONFile<DatabaseSchema>(join(dbPath, 'diagrams.json'));
-        this.db = new Low(adapter, { diagrams: [], diagramCache: [] });
+        const adapter = new JSONFile<ExtendedDatabaseSchema>(join(dbPath, 'diagrams.json'));
+        this.db = new Low(adapter, { 
+            diagrams: [], 
+            diagramCache: [],
+            projects: [] 
+        });
     }
 
     /**
@@ -38,21 +51,134 @@ export class DiagramDb implements DiagramStorage {
         
         // Ensure we have our collections
         if (!this.db.data) {
-            this.db.data = { diagrams: [], diagramCache: [] };
+            this.db.data = { 
+                diagrams: [], 
+                diagramCache: [],
+                projects: [] 
+            };
+            await this.db.write();
+        }
+        
+        // If this is an upgraded database, ensure projects array exists
+        if (!this.db.data.projects) {
+            this.db.data.projects = [];
             await this.db.write();
         }
     }
 
     /**
-     * Create a new C4 diagram
-     * Generates a unique ID and timestamps
+     * Create a new project
+     * @param project Project to create
+     * @returns The created project
      */
-    async createDiagram(name: string, description?: string): Promise<C4Diagram> {
+    async createProject(project: Project): Promise<Project> {
+        this.db.data.projects.push(project);
+        await this.db.write();
+        return project;
+    }
+
+    /**
+     * Get a project by ID
+     * @param id Project ID
+     * @returns The project or null if not found
+     */
+    async getProject(id: string): Promise<Project | null> {
+        const project = this.db.data.projects.find(p => p.id === id);
+        return project || null;
+    }
+
+    /**
+     * Update a project's properties
+     * @param id Project ID
+     * @param updates Partial project updates
+     * @returns The updated project
+     */
+    async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+        const index = this.db.data.projects.findIndex(p => p.id === id);
+        if (index === -1) {
+            throw new Error(`Project not found: ${id}`);
+        }
+
+        const project = this.db.data.projects[index];
+        const updated = {
+            ...project,
+            ...updates,
+            updated: new Date().toISOString()
+        };
+
+        this.db.data.projects[index] = updated;
+        await this.db.write();
+        return updated;
+    }
+
+    /**
+     * List all projects
+     * @returns Array of all projects
+     */
+    async listProjects(): Promise<Project[]> {
+        return this.db.data.projects;
+    }
+
+    /**
+     * Find a diagram by name and type within a project
+     * This is useful for our filesystem-based relationship approach
+     * 
+     * @param projectId Project containing the diagram
+     * @param name Diagram name to look for
+     * @param diagramType Type of diagram to find
+     * @returns The matching diagram or null
+     */
+    async findDiagramByName(
+        projectId: string, 
+        name: string, 
+        diagramType: DiagramType
+    ): Promise<C4Diagram | null> {
+        const diagrams = this.db.data.diagrams.filter(d => 
+            d.diagramType === diagramType && 
+            d.name.toLowerCase() === name.toLowerCase() &&
+            // Check if this diagram belongs to the project
+            this.db.data.projects.some(p => 
+                p.id === projectId && 
+                p.diagrams.includes(d.id)
+            )
+        );
+        
+        return diagrams.length > 0 ? diagrams[0] : null;
+    }
+
+    /**
+     * Find diagrams by file path pattern
+     * Useful for finding diagrams related by filesystem structure
+     * 
+     * @param pattern Path pattern to match against
+     * @returns Array of matching diagrams
+     */
+    async findDiagramsByFilePath(pattern: string): Promise<C4Diagram[]> {
+        return this.db.data.diagrams.filter(d => 
+            d.pumlPath?.includes(pattern) || 
+            d.pngPath?.includes(pattern)
+        );
+    }
+
+    /**
+     * Create a new C4 diagram with specified type and paths
+     * Updated to support our enhanced C4Diagram interface
+     */
+    async createDiagram(
+        name: string, 
+        description?: string,
+        diagramType: DiagramType = DiagramType.CONTEXT,
+        pumlPath?: string,
+        pngPath?: string
+    ): Promise<C4Diagram> {
         const now = new Date().toISOString();
         const diagram: C4Diagram = {
             id: uuidv4(),
             name,
             description,
+            diagramType,
+            pumlPath: pumlPath || '',
+            pngPath: pngPath || '',
             elements: [],
             relationships: [],
             created: now,
@@ -63,6 +189,37 @@ export class DiagramDb implements DiagramStorage {
         await this.db.write();
         return diagram;
     }
+
+    /**
+     * Add a diagram to a project
+     * 
+     * @param projectId Project ID
+     * @param diagramId Diagram ID to add
+     * @returns Updated project
+     */
+    async addDiagramToProject(projectId: string, diagramId: string): Promise<Project> {
+        const project = await this.getProject(projectId);
+        if (!project) {
+            throw new Error(`Project not found: ${projectId}`);
+        }
+
+        const diagram = await this.getDiagram(diagramId);
+        if (!diagram) {
+            throw new Error(`Diagram not found: ${diagramId}`);
+        }
+
+        // Only add if not already in the project
+        if (!project.diagrams.includes(diagramId)) {
+            project.diagrams.push(diagramId);
+            project.updated = new Date().toISOString();
+            await this.updateProject(projectId, project);
+        }
+
+        return project;
+    }
+
+    // Keep existing methods, but update as needed
+    // Only showing methods that need updates here
 
     /**
      * Retrieve a diagram by ID

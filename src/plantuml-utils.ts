@@ -6,8 +6,33 @@ import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import { getAppRoot } from './initialize.js';
-import { C4Diagram } from './types-and-interfaces.js';
+import { C4Diagram, DiagramType } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
+import { savePumlFile, savePngFile } from './filesystem-utils.js';
+
+/**
+ * Gets the appropriate PlantUML include statement based on diagram type
+ * Different diagram types require different library includes
+ * 
+ * @param diagramType Type of C4 diagram
+ * @returns PlantUML include statement
+ */
+export function getPlantUMLImport(diagramType: DiagramType): string {
+  switch (diagramType) {
+    case DiagramType.CONTEXT:
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml';
+    case DiagramType.CONTAINER:
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml';
+    case DiagramType.COMPONENT:
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
+    case DiagramType.CODE:
+      // For code diagrams, we still use the component library
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
+    default:
+      // Default to context diagram
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml';
+  }
+}
 
 /**
  * Encodes PlantUML diagram text for use with PlantUML server
@@ -103,16 +128,48 @@ export const generateDiagram = async (
 };
 
 /**
+ * Gets the PlantUML macro name for a specific element
+ * Based on its base type and variant (e.g., System, Person, ContainerDb, etc.)
+ * 
+ * @param element Element to get macro for
+ * @returns PlantUML macro name
+ */
+export function getElementMacro(element: {
+  descriptor: { baseType: string; variant?: string }
+}): string {
+  const { baseType, variant } = element.descriptor;
+  
+  // Start with the base element type (capitalized)
+  let macro = baseType.charAt(0).toUpperCase() + baseType.slice(1);
+  
+  // Add variant suffixes
+  if (variant === 'db') {
+    macro += 'Db';
+  } else if (variant === 'queue') {
+    macro += 'Queue';
+  }
+  
+  // Add external suffix if needed
+  if (variant === 'external') {
+    macro += '_Ext';
+  }
+  
+  return macro;
+}
+
+/**
  * Generates a PlantUML diagram from the current diagram state
+ * Updated to support different diagram types and our new element descriptors
+ * 
  * @param diagram Current diagram state with elements and relationships
- * @returns PNG diagram as a Buffer
+ * @returns PNG diagram as a base64 string
  */
 export const generateDiagramFromState = async (diagram: C4Diagram): Promise<string> => {
   const lines: string[] = [];
   
   // Header
   lines.push('@startuml');
-  lines.push('!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
+  lines.push(getPlantUMLImport(diagram.diagramType));
   lines.push('');
   
   // Title and description as a note
@@ -125,22 +182,23 @@ export const generateDiagramFromState = async (diagram: C4Diagram): Promise<stri
   }
   lines.push('');
 
-  // Add elements by type
+  // Add elements by type using our descriptor-based approach
   diagram.elements.forEach(element => {
     const id = element.id.replace(/[^\w]/g, '_');
     const name = element.name;
     const description = element.description;
     
-    switch (element.type) {
-      case 'system':
-        lines.push(`System(${id}, "${name}", "${description}")`);
-        break;
-      case 'person':
-        lines.push(`Person(${id}, "${name}", "${description}")`);
-        break;
-      case 'external-system':
-        lines.push(`System_Ext(${id}, "${name}", "${description}")`);
-        break;
+    // Get the appropriate PlantUML macro based on element type
+    const macro = getElementMacro(element);
+    
+    // Add technology parameter for container and component elements if available
+    const techStr = element.technology ? `, "${element.technology}"` : '';
+    
+    // Generate the element definition
+    if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
+      lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}")`);
+    } else {
+      lines.push(`${macro}(${id}, "${name}", "${description}")`);
     }
   });
   lines.push('');
@@ -180,16 +238,23 @@ export const generateDiagramFromState = async (diagram: C4Diagram): Promise<stri
 /**
  * Generates an empty PlantUML diagram with just the title and description
  * Used for initializing a new diagram workspace
+ * Supports different diagram types through appropriate includes
  * 
- * @param diagram Diagram metadata
- * @returns PNG diagram as a Buffer
+ * @param diagram Diagram metadata with type
+ * @param pumlPath Path where the PUML file should be saved
+ * @param pngPath Path where the PNG file should be saved
+ * @returns PNG diagram as a base64 string
  */
-export const generateEmptyDiagram = async (diagram: C4Diagram): Promise<string> => {
+export const generateEmptyDiagram = async (
+  diagram: C4Diagram,
+  pumlPath: string,
+  pngPath: string
+): Promise<string> => {
   const lines: string[] = [];
   
-  // Header
+  // Header with appropriate include based on diagram type
   lines.push('@startuml');
-  lines.push('!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml');
+  lines.push(getPlantUMLImport(diagram.diagramType));
   lines.push('HIDE_STEREOTYPE()');
   lines.push('');
   
@@ -203,11 +268,55 @@ export const generateEmptyDiagram = async (diagram: C4Diagram): Promise<string> 
   }
   lines.push('');
   
+  // Add appropriate helper comment based on diagram type
+  switch (diagram.diagramType) {
+    case DiagramType.CONTEXT:
+      lines.push("' Add systems and people to your diagram, for example:");
+      lines.push("' Person(user, \"User\", \"A user of the system\")");
+      lines.push("' System(system, \"System\", \"Description of the system\")");
+      lines.push("' System_Ext(external, \"External System\", \"An external system\")");
+      lines.push("' Rel(user, system, \"Uses\")");
+      break;
+    case DiagramType.CONTAINER:
+      lines.push("' Add containers to your diagram, for example:");
+      lines.push("' Container(web_app, \"Web Application\", \"React\", \"The main web interface\")");
+      lines.push("' ContainerDb(database, \"Database\", \"PostgreSQL\", \"Stores user data\")");
+      lines.push("' Rel(web_app, database, \"Reads/writes\")");
+      break;
+    case DiagramType.COMPONENT:
+      lines.push("' Add components to your diagram, for example:");
+      lines.push("' Component(controller, \"Controller\", \"Spring MVC\", \"Handles HTTP requests\")");
+      lines.push("' Component(service, \"Service\", \"Spring Service\", \"Business logic\")");
+      lines.push("' Rel(controller, service, \"Uses\")");
+      break;
+    case DiagramType.CODE:
+      lines.push("' Add code elements to your diagram, for example:");
+      lines.push("' Component(interface, \"Interface\", \"Java\", \"Defines contract\")");
+      lines.push("' Component(implementation, \"Implementation\", \"Java\", \"Implements interface\")");
+      lines.push("' Rel(implementation, interface, \"Implements\")");
+      break;
+  }
+  
   // Footer
+  lines.push('');
   lines.push('@enduml');
 
-  // Generate PNG
-  return await generateDiagram(lines.join('\n'));
+  const pumlContent = lines.join('\n');
+  
+  // Save the PUML file
+  await savePumlFile(pumlPath, pumlContent);
+  
+  // Generate PNG and save it
+  try {
+    const pngData = await generateDiagram(pumlContent);
+    await savePngFile(pngPath, pngData);
+    
+    // Also cache the diagram for quick access
+    return pngData;
+  } catch (error) {
+    console.error('Error generating or saving PNG:', error);
+    throw error;
+  }
 };
 
 /**

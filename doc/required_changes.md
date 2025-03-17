@@ -49,7 +49,7 @@ export interface C4Diagram {
   updated: string;
   metadata?: Record<string, unknown>;  // Can store source element name here if needed
   
-  // Remove workflowState field and explicit parent-child relationships
+  // Remove workflowState field and explicit parent-child relationships (DONE)
 }
 ```
 
@@ -127,6 +127,7 @@ export interface DiagramStorage {
 ```
 
 ## Files to Remove or Significantly Modify
+**DONE**
 
 1. **`workflow-state.ts`** - Remove entirely
 2. **`navigateWorkflowTool.ts`** - Remove entirely
@@ -198,6 +199,7 @@ The filesystem structure is critical in our approach as it explicitly encodes di
 By maintaining consistent naming conventions and directory organization, diagrams at different levels are implicitly related without requiring explicit database relationships.
 
 ## Tool Response Updates
+**DONE**
 
 Remove workflow state references from tool responses:
 

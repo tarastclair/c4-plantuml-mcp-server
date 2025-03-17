@@ -6,11 +6,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DiagramDb } from '../db.js';
 import { updateElementTool } from "./updateElementTool.js";
 import { updateRelationshipTool } from "./updateRelationshipTool.js";
-import { createContextDiagramTool } from "./createC4DiagramTool.js";
+import { createContextDiagramTool } from "./createContextDiagramTool.js";
 import { addSystemTool } from "./addSystemTool.js";
 import { registerAddPersonTool } from "./addPersonTool.js";
 import { addExternalSystemTool } from "./addExternalSystemTool.js";
 import { addRelationshipTool } from "./addRelationshipTool.js";
+import { createC4ProjectTool } from "./createC4ProjectTool.js";
 
 /**
  * Register all tools with the MCP server
@@ -26,4 +27,5 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   registerAddPersonTool(server, db);
   addExternalSystemTool(server, db);
   addRelationshipTool(server, db);
+  createC4ProjectTool(server, db);
 };

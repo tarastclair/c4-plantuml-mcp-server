@@ -11,15 +11,19 @@ export type EntityIDMapping = {
 
 /**
  * Tool response metadata that provides context for the client
- * Includes diagram ID, and entity ID mappings
+ * Enhanced to support our project structure and diagram hierarchy
  */
 export type ToolMetadata = {
-  diagramId: string; // Must give the current diagramId
-  entityIds?: { // Must give the IDs of all entities in the diagram
-    systems: EntityIDMapping;
-    persons: EntityIDMapping;
-    externalSystems: EntityIDMapping;
-    relationships: EntityIDMapping;
+  projectId: string; // ID of the current project
+  // Diagram entity mappings - we'll make this more flexible for different diagram types
+  entityIds?: { 
+    [diagramId: string]: { // Using diagram IDs as keys to support hierarchy
+      // Generic elements collection to handle all diagram types
+      elements: {
+        [elementType: string]: EntityIDMapping; // Type-specific mappings
+      };
+      relationships: EntityIDMapping;
+    }
   }
 };
 
@@ -36,43 +40,49 @@ export type ToolMetadata = {
  */
 export const createToolResponse = (message: string, metadata: ToolMetadata): CallToolResult => {
   // Create the full response with message and metadata
-  // The format is designed to be both human-readable and machine-parsable
-  const fullMessage = `${message}\n\n---\n\nResponse metadata for reference:\n\nDiagram ID: ${metadata.diagramId}`;
+  let fullMessage = `${message}\n\n---\n\nResponse metadata for reference:\n\n`;
+  
+  // Add project ID if available
+  if (metadata.projectId) {
+    fullMessage += `Project ID: ${metadata.projectId}\n`;
+  }
   
   // Only add entity mappings section if they're provided
   let entitiesText = '';
+  
   if (metadata.entityIds) {
-    // Format systems
-    if (Object.keys(metadata.entityIds.systems).length > 0) {
-      entitiesText += '\n\nSystems:\n';
-      Object.entries(metadata.entityIds.systems).forEach(([id, name]) => {
-        entitiesText += `- ${name} (${id})\n`;
-      });
-    }
-    
-    // Format persons
-    if (Object.keys(metadata.entityIds.persons).length > 0) {
-      entitiesText += '\nPersons:\n';
-      Object.entries(metadata.entityIds.persons).forEach(([id, name]) => {
-        entitiesText += `- ${name} (${id})\n`;
-      });
-    }
-    
-    // Format external systems
-    if (Object.keys(metadata.entityIds.externalSystems).length > 0) {
-      entitiesText += '\nExternal Systems:\n';
-      Object.entries(metadata.entityIds.externalSystems).forEach(([id, name]) => {
-        entitiesText += `- ${name} (${id})\n`;
-      });
-    }
-    
-    // Format relationships
-    if (Object.keys(metadata.entityIds.relationships).length > 0) {
-      entitiesText += '\nRelationships:\n';
-      Object.entries(metadata.entityIds.relationships).forEach(([id, description]) => {
-        entitiesText += `- ${description} (${id})\n`;
-      });
-    }
+    // For each diagram in the hierarchy
+    Object.entries(metadata.entityIds).forEach(([diagramId, diagramEntities]) => {
+      // If multiple diagrams, include the diagram ID
+      if (Object.keys(metadata.entityIds || {}).length > 1) {
+        entitiesText += `\nDiagram: ${diagramId}\n`;
+      }
+      
+      // Format elements by type
+      if (diagramEntities.elements) {
+        Object.entries(diagramEntities.elements).forEach(([elementType, mappings]) => {
+          if (Object.keys(mappings).length > 0) {
+            // Format element type name for display (capitalize, handle special cases)
+            const displayType = elementType
+              .replace(/([A-Z])/g, ' $1') // Add spaces before capital letters
+              .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+              
+            entitiesText += `\n${displayType}:\n`;
+            Object.entries(mappings).forEach(([id, name]) => {
+              entitiesText += `- ${name} (${id})\n`;
+            });
+          }
+        });
+      }
+      
+      // Format relationships
+      if (diagramEntities.relationships && Object.keys(diagramEntities.relationships).length > 0) {
+        entitiesText += '\nRelationships:\n';
+        Object.entries(diagramEntities.relationships).forEach(([id, description]) => {
+          entitiesText += `- ${description} (${id})\n`;
+        });
+      }
+    });
   }
   
   return {
@@ -125,45 +135,49 @@ export const getErrorMessage = (error: unknown): string => {
 
 /**
  * Builds entity ID mappings from a C4 diagram state
- * This creates a lookup dictionary of all UUIDs to their friendly names
- * Used to help clients display and reference entities correctly
+ * Enhanced to support all element types based on diagram type
  * 
  * @param diagram The complete C4 diagram state
- * @returns Object containing mappings for all entity types
+ * @returns Object containing hierarchical mappings for all entity types
  */
 export const buildEntityMappings = (diagram: C4Diagram): ToolMetadata['entityIds'] => {
-  // Build element type mappings
-  const systems: EntityIDMapping = {};
-  const persons: EntityIDMapping = {};
-  const externalSystems: EntityIDMapping = {};
-  const relationships: EntityIDMapping = {};
-
-  // Process all elements based on their type
-  diagram.elements.forEach((element: C4Element) => {
-    const mapping = { [element.id]: element.name };
-    
-    switch (element.type) {
-      case 'system':
-        Object.assign(systems, mapping);
-        break;
-      case 'person':
-        Object.assign(persons, mapping);
-        break;
-      case 'external-system':
-        Object.assign(externalSystems, mapping);
-        break;
+  // Initialize result structure
+  const result: NonNullable<ToolMetadata['entityIds']> = {
+    [diagram.id]: {
+      elements: {},
+      relationships: {}
     }
+  };
+  
+  // Initialize element type collections based on diagram type
+  const elements = result[diagram.id].elements;
+  
+  // Process all elements
+  diagram.elements.forEach((element: C4Element) => {
+    // Get the element descriptor details
+    const { baseType, variant } = element.descriptor;
+    
+    // Create the appropriate category key as a string
+    // This way we avoid TypeScript trying to enforce BaseElementType constraints
+    let categoryKey: string = baseType;
+    if (variant === 'external') {
+      // Construct a string that won't try to be treated as a BaseElementType
+      categoryKey = `external${baseType.charAt(0).toUpperCase() + baseType.slice(1)}`;
+    }
+    
+    // Initialize the category if it doesn't exist
+    if (!elements[categoryKey]) {
+      elements[categoryKey] = {};
+    }
+    
+    // Add the element mapping
+    elements[categoryKey][element.id] = element.name;
   });
   
   // Process all relationships
   diagram.relationships.forEach((relationship) => {
-    relationships[relationship.id] = relationship.description;
+    result[diagram.id].relationships[relationship.id] = relationship.description;
   });
 
-  return {
-    systems,
-    persons,
-    externalSystems,
-    relationships
-  };
+  return result;
 };
