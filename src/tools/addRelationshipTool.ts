@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
+import { generateDiagramFromState } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 
 /**
@@ -13,7 +13,8 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
     `Add a relationship between elements in the C4 diagram.
 
     Required Input Fields:
-    - diagramId: String (UUID from createC4Diagram)
+    - projectId: String (UUID from create-c4-project)
+    - diagramId: String (UUID from create-context-diagram)
     - sourceId: String (UUID of the source element)
     - targetId: String (UUID of the target element)
     - description: String (Description of the relationship)
@@ -26,20 +27,32 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
     
     Response Fields:
     - message: String (User-friendly message about the update)
-    - diagramId: String (UUID of the diagram)
+    - projectId: String (UUID of the project)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
-      diagramId: z.string().describe("ID of the diagram"),
+      projectId: z.string().describe("UUID of the project from create-c4-project"),
+      diagramId: z.string().describe("UUID of the diagram from create-context-diagram"),
       sourceId: z.string().describe("ID of the source element"),
       targetId: z.string().describe("ID of the target element"),
       description: z.string().describe("Description of the relationship"),
       technology: z.string().optional().describe("Optional technology used in the relationship")
     },
-    async ({ diagramId, sourceId, targetId, description, technology }, extra) => {
+    async ({ projectId, diagramId, sourceId, targetId, description, technology }, extra) => {
       try {
+        // Check if project exists
+        const project = await db.getProject(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} not found. Please provide a valid project UUID.`);
+        }
+        
+        // Check if diagram exists and belongs to the project
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
-          throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID`);
+          throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
+        }
+        
+        if (!project.diagrams.includes(diagramId)) {
+          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
         }
 
         // Validate elements exist
@@ -57,17 +70,22 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
           technology
         });
 
-        // Generate updated diagram
+        // Get the updated diagram
         const updatedDiagram = await db.getDiagram(diagramId);
         if (!updatedDiagram) {
           throw new Error(`Diagram not found after adding relationship: ${diagramId}`);
         }
 
         try {
-          // Generate and write the new diagram image
-          const image = await generateDiagramFromState(updatedDiagram);
-          await db.cacheDiagram(diagramId, image);
-          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+          // Generate the diagram, save files, and get the PNG data in one step
+          const pngData = await generateDiagramFromState(
+            updatedDiagram,
+            updatedDiagram.pumlPath,
+            updatedDiagram.pngPath
+          );
+          
+          // Cache the diagram for quick access
+          await db.cacheDiagram(diagramId, pngData);
         } catch (diagramError) {
           console.warn(`Failed to generate diagram for relationship ${relationship.id}: ${getErrorMessage(diagramError)}`);
         }
@@ -80,13 +98,13 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
         const sourceName = sourceElement?.name || 'unknown';
         const targetName = targetElement?.name || 'unknown';
         
-        const message = `Relationship ${relationship.id} added from ${sourceName} (${sourceId}) to ${targetName} (${targetId}). Are there any other relationships to define?`;
+        const message = `Added relationship "${description}" from "${sourceName}" to "${targetName}". Are there any other relationships to define?`;
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
-          diagramId,
+          projectId,
           entityIds: entityMappings
         });
       } catch (error) {

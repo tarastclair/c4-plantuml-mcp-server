@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
+import { generateDiagramFromState } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 
 /**
@@ -13,7 +13,8 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
     `Add or update a system in the C4 diagram.
     
     Required Input Fields:
-    - diagramId: String (UUID from createC4Diagram)
+    - projectId: String (UUID from create-c4-project)
+    - diagramId: String (UUID from create-context-diagram)
     - name: String (Name of the system)
     - description: String (Description of what the system does)
     
@@ -22,50 +23,70 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
     
     Response Fields:
     - message: String (User-friendly message about the update)
-    - diagramId: String (UUID of the diagram)
-    - entityIds: Object (Mappings of entity UUIDs to their names)`,
+    - projectId: String (UUID of the C4 project)
+    - entityIds: Object (Mappings of entity IDs by diagram)`,
     {
-      diagramId: z.string().describe("UUID of the diagram from createC4Diagram"),
+      projectId: z.string().describe("UUID of the project from create-c4-project"),
+      diagramId: z.string().describe("UUID of the diagram from create-context-diagram"),
       name: z.string().describe("Name of the system"),
       description: z.string().describe("Description of the system")
     },
-    async ({ diagramId, name, description }, extra) => {
+    async ({ projectId, diagramId, name, description }, extra) => {
       try {
+        // Check if project exists
+        const project = await db.getProject(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} not found. Please provide a valid project UUID.`);
+        }
+        
+        // Check if diagram exists and belongs to the project
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
           throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
         }
+        
+        if (!project.diagrams.includes(diagramId)) {
+          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
+        }
 
-        // Add the system element
+        // Add the system element using the descriptor approach
         const system = await db.addElement(diagramId, {
-          type: 'system',
+          descriptor: {
+            baseType: 'system',
+            variant: 'standard'
+          },
           name,
           description
         });
 
-        // Generate updated diagram
+        // Get the updated diagram
         const updatedDiagram = await db.getDiagram(diagramId);
         if (!updatedDiagram) {
-          throw new Error(`Diagram not found after updating relationship: ${diagramId}`);
+          throw new Error(`Diagram not found after updating: ${diagramId}`);
         }
 
         try {
-          // Generate and write the new diagram image
-          const image = await generateDiagramFromState(updatedDiagram);
-          await db.cacheDiagram(diagramId, image);
-          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+          // Generate the diagram, save files, and get the PNG data in one step
+          const pngData = await generateDiagramFromState(
+            updatedDiagram,
+            updatedDiagram.pumlPath,
+            updatedDiagram.pngPath
+          );
+          
+          // Cache the diagram for quick access
+          await db.cacheDiagram(diagramId, pngData);
         } catch (diagramError) {
           console.warn(`Failed to generate diagram for system ${system.id}: ${getErrorMessage(diagramError)}`);
         }
 
-        const baseMessage = `Created new system (UUID: ${system.id}).`;
-        const message = "Are there any other systems that we need to identify, or should we move onto identifing external systems?";
+        const baseMessage = `Added new system "${name}" to the diagram.`;
+        const message = `${baseMessage}\n\nAre there any other systems that we need to identify, or should we move onto identifying external systems?`;
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
         
         return createToolResponse(message, {
-          diagramId,
+          projectId,
           entityIds: entityMappings
         });
       } catch (error) {

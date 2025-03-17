@@ -158,13 +158,14 @@ export function getElementMacro(element: {
 }
 
 /**
- * Generates a PlantUML diagram from the current diagram state
- * Updated to support different diagram types and our new element descriptors
+ * Generate PlantUML source for a diagram
+ * Separated from diagram generation to support both 
+ * generating PNG and writing PUML files
  * 
  * @param diagram Current diagram state with elements and relationships
- * @returns PNG diagram as a base64 string
+ * @returns PlantUML source code as a string
  */
-export const generateDiagramFromState = async (diagram: C4Diagram): Promise<string> => {
+export const generatePlantUMLSource = (diagram: C4Diagram): string => {
   const lines: string[] = [];
   
   // Header
@@ -231,8 +232,45 @@ export const generateDiagramFromState = async (diagram: C4Diagram): Promise<stri
   // Footer
   lines.push('@enduml');
 
-  // Generate PNG
-  return await generateDiagram(lines.join('\n'));
+  return lines.join('\n');
+};
+
+/**
+ * Generates a PlantUML diagram from the current diagram state and saves it to disk
+ * 
+ * @param diagram Current diagram state with elements and relationships
+ * @param pumlPath Path where PUML file should be saved (null to skip saving)
+ * @param pngPath Path where PNG file should be saved (null to skip saving)
+ * @returns PNG diagram as a base64 string
+ */
+export const generateDiagramFromState = async (
+  diagram: C4Diagram,
+  pumlPath?: string | null,
+  pngPath?: string | null
+): Promise<string> => {
+  try {
+    // Generate PlantUML source
+    const pumlContent = generatePlantUMLSource(diagram);
+    
+    // Save PUML file if path provided
+    if (pumlPath) {
+      await savePumlFile(pumlPath, pumlContent);
+    }
+    
+    // Generate PNG
+    const pngData = await generateDiagram(pumlContent);
+    
+    // Save PNG file if path provided
+    if (pngPath) {
+      await savePngFile(pngPath, pngData);
+    }
+    
+    // Return the PNG data for caching or other uses
+    return pngData;
+  } catch (error) {
+    console.error('Error generating or saving diagram:', error);
+    throw error;
+  }
 };
 
 /**
@@ -241,14 +279,14 @@ export const generateDiagramFromState = async (diagram: C4Diagram): Promise<stri
  * Supports different diagram types through appropriate includes
  * 
  * @param diagram Diagram metadata with type
- * @param pumlPath Path where the PUML file should be saved
- * @param pngPath Path where the PNG file should be saved
+ * @param pumlPath Path where the PUML file should be saved (null to skip saving)
+ * @param pngPath Path where the PNG file should be saved (null to skip saving)
  * @returns PNG diagram as a base64 string
  */
 export const generateEmptyDiagram = async (
   diagram: C4Diagram,
-  pumlPath: string,
-  pngPath: string
+  pumlPath?: string | null,
+  pngPath?: string | null
 ): Promise<string> => {
   const lines: string[] = [];
   
@@ -303,75 +341,22 @@ export const generateEmptyDiagram = async (
 
   const pumlContent = lines.join('\n');
   
-  // Save the PUML file
-  await savePumlFile(pumlPath, pumlContent);
-  
-  // Generate PNG and save it
   try {
-    const pngData = await generateDiagram(pumlContent);
-    await savePngFile(pngPath, pngData);
+    // Save the PUML file if path provided
+    if (pumlPath) {
+      await savePumlFile(pumlPath, pumlContent);
+    }
     
-    // Also cache the diagram for quick access
+    // Generate PNG and save it if path provided
+    const pngData = await generateDiagram(pumlContent);
+    if (pngPath) {
+      await savePngFile(pngPath, pngData);
+    }
+    
+    // Return the PNG data for caching or other uses
     return pngData;
   } catch (error) {
-    console.error('Error generating or saving PNG:', error);
-    throw error;
-  }
-};
-
-/**
- * File output information for saved diagrams
- */
-export interface DiagramFileOutput {
-  absolutePath: string;
-  relativePath: string;
-  filename: string;
-}
-
-/**
- * Writes diagram PNG output to the filesystem with a human-readable filename
- * 
- * @param diagramId ID of the diagram for database reference
- * @param diagramName Human-readable name of the diagram
- * @param diagramType Type of the diagram (e.g., 'context', 'container', 'component')
- * @param base64Data Base64-encoded PNG data
- * @returns File output information
- */
-export const writeDiagramToFile = async (
-  diagramName: string,
-  diagramType: string = 'context',
-  base64Data: string
-): Promise<DiagramFileOutput> => {
-  try {
-    // Use output directory at app root
-    const outputDir = path.join(getAppRoot(), 'diagrams');
-    
-    // Ensure output directory exists
-    await fs.mkdir(outputDir, { recursive: true });
-    
-    // Create a filename-safe version of the diagram name
-    const safeFileName = diagramName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace any non-alphanumeric chars with hyphens
-      .replace(/^-+|-+$/g, '')      // Remove leading/trailing hyphens
-      .substring(0, 50);             // Limit length to avoid super long filenames
-    
-    // Format: diagram-name-diagram-type.png
-    const filename = `${safeFileName}-${diagramType}-diagram.png`;
-    const filepath = path.join(outputDir, filename);
-    
-    // Convert base64 back to binary and write PNG file
-    const buffer = Buffer.from(base64Data, 'base64');
-    await fs.writeFile(filepath, buffer);
-    
-    // Return path info for maximum flexibility
-    return {
-      absolutePath: filepath,
-      relativePath: path.relative(getAppRoot(), filepath),
-      filename
-    };
-  } catch (error) {
-    console.error('Error writing diagram file:', error);
+    console.error('Error generating or saving diagram:', error);
     throw error;
   }
 };

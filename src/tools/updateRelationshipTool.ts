@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
+import { generateDiagramFromState } from "../plantuml-utils.js";
 import { C4Relationship } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
 
@@ -15,8 +15,9 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
     `Update an existing relationship in the C4 diagram
     
     Required Input Fields:
-    - diagramId: String (UUID from createC4Diagram)
-    - relationshipId: String (UUID of the relationship to update
+    - projectId: String (UUID from create-c4-project)
+    - diagramId: String (UUID from create-context-diagram)
+    - relationshipId: String (UUID of the relationship to update)
 
     Optional Input Fields:
     - sourceId: String (UUID of the new source element)
@@ -29,34 +30,39 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
     
     Response Fields:
     - message: String (User-friendly message about the update)
-    - diagramId: String (UUID of the diagram)
+    - projectId: String (UUID of the project)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
-      diagramId: z.string().describe("UUID of the diagram"),
+      projectId: z.string().describe("UUID of the project from create-c4-project"),
+      diagramId: z.string().describe("UUID of the diagram from create-context-diagram"),
       relationshipId: z.string().describe("UUID of the relationship to update"),
       sourceId: z.string().optional().describe("UUID of the new source element"),
       targetId: z.string().optional().describe("UUID of the new target element"),
       description: z.string().optional().describe("New description for the relationship"),
       technology: z.string().optional().describe("New technology used in the relationship")
     },
-    async ({ diagramId, relationshipId, sourceId, targetId, description, technology }, extra) => {
+    async ({ projectId, diagramId, relationshipId, sourceId, targetId, description, technology }, extra) => {
       try {
+        // Check if project exists
+        const project = await db.getProject(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} not found. Please provide a valid project UUID.`);
+        }
+        
+        // Check if diagram exists and belongs to the project
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
           throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
+        }
+        
+        if (!project.diagrams.includes(diagramId)) {
+          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
         }
 
         // Find the relationship to update
         const relationship = diagram.relationships.find(r => r.id === relationshipId);
         if (!relationship) {
           throw new Error(`Relationship not found: ${relationshipId}`);
-        }
-
-        // Validate elements exist
-        const sourceExists = diagram.elements.some(e => e.id === sourceId);
-        const targetExists = diagram.elements.some(e => e.id === targetId);
-        if (!sourceExists || !targetExists) {
-          throw new Error("Source or target element not found");
         }
 
         // Collect updates
@@ -84,17 +90,22 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
         // Perform update
         await db.updateRelationship(diagramId, relationshipId, updates);
 
-        // Generate updated diagram
+        // Get the updated diagram
         const updatedDiagram = await db.getDiagram(diagramId);
         if (!updatedDiagram) {
           throw new Error(`Diagram not found after updating relationship: ${diagramId}`);
         }
 
         try {
-          // Generate and write the new diagram image
-          const image = await generateDiagramFromState(updatedDiagram);
-          await db.cacheDiagram(diagramId, image);
-          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+          // Generate the diagram, save files, and get the PNG data in one step
+          const pngData = await generateDiagramFromState(
+            updatedDiagram,
+            updatedDiagram.pumlPath,
+            updatedDiagram.pngPath
+          );
+          
+          // Cache the diagram for quick access
+          await db.cacheDiagram(diagramId, pngData);
         } catch (diagramError) {
           console.warn(`Failed to generate diagram after updating relationship ${relationshipId}: ${getErrorMessage(diagramError)}`);
         }
@@ -112,13 +123,13 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
         const sourceName = sourceElement?.name || 'unknown';
         const targetName = targetElement?.name || 'unknown';
         
-        const message = `Relationship ${relationship.id} from ${sourceName} (${updatedRelationship.sourceId}) to ${targetName} (${updatedRelationship.targetId}) updated successfully. Should we make any other refinements?`;
+        const message = `Updated relationship "${updatedRelationship.description}" from "${sourceName}" to "${targetName}". Should we make any other refinements?`;
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
-          diagramId,
+          projectId,
           entityIds: entityMappings
         });
       } catch (error) {

@@ -458,4 +458,18 @@ export class DiagramDb implements DiagramStorage {
         this.db.data.diagramCache = this.db.data.diagramCache.filter(c => c.diagramId !== diagramId);
         await this.db.write();
     }
+
+    /**
+     * Get a project that contains a specific diagram
+     * This is useful for finding the project context for a diagram operation
+     * 
+     * @param diagramId The diagram ID to search for
+     * @returns The project containing the diagram, or null if not found
+     */
+    async getProjectByDiagramId(diagramId: string): Promise<Project | null> {
+        const project = this.db.data.projects.find(p => 
+            p.diagrams && p.diagrams.includes(diagramId)
+        );
+        return project || null;
+    }
 }

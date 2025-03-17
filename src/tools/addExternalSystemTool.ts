@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState, writeDiagramToFile } from "../plantuml-utils.js";
+import { generateDiagramFromState } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
 
 /**
@@ -13,7 +13,8 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
     `Add a person/actor to the C4 diagram.
     
     Required Input Fields:
-    - diagramId: String (UUID from createC4Diagram)
+    - projectId: String (UUID from create-c4-project)
+    - diagramId: String (UUID from create-context-diagram)
     - name: String (Name of the external system)
     - description: String (Description of the external system)
 
@@ -25,24 +26,39 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
     
     Response Fields:
     - message: String (User-friendly message about the update)
-    - diagramId: String (UUID of the diagram)
+    - projectId: String (UUID of the project)
     - entityIds: Object (Mappings of entity UUIDs to their names)`,
     {
-      diagramId: z.string().describe("UUID of the diagram"),
+      projectId: z.string().describe("UUID of the project from create-c4-project"),
+      diagramId: z.string().describe("UUID of the diagram from create-context-diagram"),
       name: z.string().describe("Name of the external system"),
       description: z.string().describe("Description of the external system"),
       systemId: z.string().optional().describe("Optional UUID of the core system this external system interacts with")
     },
-    async ({ diagramId, name, description, systemId }, extra) => {
+    async ({ projectId, diagramId, name, description, systemId }, extra) => {
       try {
+        // Check if project exists
+        const project = await db.getProject(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} not found. Please provide a valid project UUID.`);
+        }
+        
+        // Check if diagram exists and belongs to the project
         const diagram = await db.getDiagram(diagramId);
         if (!diagram) {
-          throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID`);
+          throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
+        }
+        
+        if (!project.diagrams.includes(diagramId)) {
+          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
         }
 
-        // Add the external system element
+        // Add the external system element using the descriptor approach
         const externalSystem = await db.addElement(diagramId, {
-          type: 'external-system',
+          descriptor: {
+            baseType: 'system',
+            variant: 'external'
+          },
           name,
           description
         });
@@ -63,34 +79,39 @@ export const addExternalSystemTool = (server: McpServer, db: DiagramDb): void =>
           });
         }
 
-        // Generate updated diagram
+        // Get the updated diagram
         const updatedDiagram = await db.getDiagram(diagramId);
         if (!updatedDiagram) {
           throw new Error(`Diagram not found after adding external system: ${diagramId}`);
         }
 
         try {
-          // Generate and write the new diagram image
-          const image = await generateDiagramFromState(updatedDiagram);
-          await db.cacheDiagram(diagramId, image);
-          await writeDiagramToFile(updatedDiagram.name, 'context', image);
+          // Generate the diagram, save files, and get the PNG data in one step
+          const pngData = await generateDiagramFromState(
+            updatedDiagram,
+            updatedDiagram.pumlPath,
+            updatedDiagram.pngPath
+          );
+          
+          // Cache the diagram for quick access
+          await db.cacheDiagram(diagramId, pngData);
         } catch (diagramError) {
           console.warn(`Failed to generate diagram for external system ${externalSystem.id}: ${getErrorMessage(diagramError)}`);
         }
 
         let baseMessage = ''
         if (systemId) {
-          baseMessage = `Created new external system (UUID: ${externalSystem.id}) who interacts with system (UUID: ${systemId}).`;
+          baseMessage = `Created new external system "${name}" that interacts with the core system.`;
         } else {
-          baseMessage = `Created new external system (UUID: ${externalSystem.id}).`;
+          baseMessage = `Created new external system "${name}".`;
         }
-        const message = "Are there any other external systems that we need to identify or should we move onto identifying other diagram elements?";
+        const message = `${baseMessage}\n\nAre there any other external systems that we need to identify or should we move onto identifying other diagram elements?`;
 
         // Build entity mappings to help the client know what entities are available
         const entityMappings = buildEntityMappings(updatedDiagram);
 
         return createToolResponse(message, {
-          diagramId,
+          projectId,
           entityIds: entityMappings
         });
       } catch (error) {
