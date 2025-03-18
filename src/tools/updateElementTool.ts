@@ -48,13 +48,9 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
         }
         
         // Check if diagram exists and belongs to the project
-        const diagram = await db.getDiagram(diagramId);
+        const diagram = await db.getDiagram(project.id, diagramId);
         if (!diagram) {
           throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
-        }
-        
-        if (!project.diagrams.includes(diagramId)) {
-          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
         }
 
         // Find the element to update
@@ -95,10 +91,10 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
         }
 
         // Perform update
-        await db.updateElement(diagramId, elementId, updates);
+        await db.updateElement(project.id, diagram.id, elementId, updates);
 
         // Get the updated diagram
-        const updatedDiagram = await db.getDiagram(diagramId);
+        const updatedDiagram = await db.getDiagram(project.id, diagram.id);
         if (!updatedDiagram) {
           throw new Error(`Diagram not found after updating element: ${diagramId}`);
         }

@@ -40,17 +40,13 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
         }
         
         // Check if diagram exists and belongs to the project
-        const diagram = await db.getDiagram(diagramId);
+        const diagram = await db.getDiagram(project.id, diagramId);
         if (!diagram) {
           throw new Error(`Diagram ${diagramId} not found. Please provide a valid diagram UUID.`);
         }
-        
-        if (!project.diagrams.includes(diagramId)) {
-          throw new Error(`Diagram ${diagramId} does not belong to project ${projectId}.`);
-        }
 
         // Add the system element using the descriptor approach
-        const system = await db.addElement(diagramId, {
+        const system = await db.addElement(project.id, diagram.id, {
           descriptor: {
             baseType: 'system',
             variant: 'standard'
@@ -60,7 +56,7 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
         });
 
         // Get the updated diagram
-        const updatedDiagram = await db.getDiagram(diagramId);
+        const updatedDiagram = await db.getDiagram(project.id, diagram.id);
         if (!updatedDiagram) {
           throw new Error(`Diagram not found after updating: ${diagramId}`);
         }

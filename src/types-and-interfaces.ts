@@ -4,7 +4,7 @@ export interface Project {
     name: string;
     description?: string;
     rootPath: string;
-    diagrams: string[];
+    diagrams: C4Diagram[];
     created: string;
     updated: string;
     metadata?: Record<string, unknown>;
@@ -63,6 +63,7 @@ export interface C4Relationship {
 
 // Represents a C4 architecture diagram
 export interface C4Diagram {
+    projectId: string;
     id: string;
     name: string;
     description?: string;
@@ -84,30 +85,38 @@ export interface DiagramCache {
 
 // Database schema
 export interface DatabaseSchema {
-    diagrams: C4Diagram[];
+    projects: Project[];
     diagramCache: DiagramCache[];
 }
 
 // Database interface
 export interface DiagramStorage {
-    // Diagram operations
-    createDiagram(name: string, description?: string): Promise<C4Diagram>;
-    getDiagram(id: string): Promise<C4Diagram | null>;
-    updateDiagram(id: string, updates: Partial<C4Diagram>): Promise<C4Diagram>;
-    deleteDiagram(id: string): Promise<void>;
-    listDiagrams(): Promise<C4Diagram[]>;
+    // Project operations
+    createProject(project: Project): Promise<Project>;
+    getProject(id: string): Promise<Project | null>;
+    updateProject(id: string, updates: Partial<Project>): Promise<Project>;
+    listProjects(): Promise<Project[]>;
     
-    // Element operations
-    addElement(diagramId: string, element: Omit<C4Element, 'id'>): Promise<C4Element>;
-    updateElement(diagramId: string, elementId: string, updates: Partial<C4Element>): Promise<C4Element>;
-    deleteElement(diagramId: string, elementId: string): Promise<void>;
+    // Diagram operations - updated to include projectId
+    createDiagram(projectId: string, name: string, description?: string, 
+                  diagramType?: DiagramType, pumlPath?: string, pngPath?: string): Promise<C4Diagram>;
+    getDiagram(projectId: string, diagramId: string): Promise<C4Diagram | null>;
+    updateDiagram(projectId: string, diagramId: string, updates: Partial<C4Diagram>): Promise<C4Diagram>;
+    listDiagrams(projectId: string): Promise<C4Diagram[]>;
     
-    // Relationship operations
-    addRelationship(diagramId: string, relationship: Omit<C4Relationship, 'id'>): Promise<C4Relationship>;
-    updateRelationship(diagramId: string, relationshipId: string, updates: Partial<C4Relationship>): Promise<C4Relationship>;
-    deleteRelationship(diagramId: string, relationshipId: string): Promise<void>;
+    // Element operations - updated to include projectId
+    addElement(projectId: string, diagramId: string, element: Omit<C4Element, 'id'>): Promise<C4Element>;
+    updateElement(projectId: string, diagramId: string, elementId: string, updates: Partial<C4Element>): Promise<C4Element>;
     
-    // Diagram cache operations
+    // Relationship operations - updated to include projectId
+    addRelationship(projectId: string, diagramId: string, relationship: Omit<C4Relationship, 'id'>): Promise<C4Relationship>;
+    updateRelationship(projectId: string, diagramId: string, relationshipId: string, updates: Partial<C4Relationship>): Promise<C4Relationship>;
+    
+    // Helper methods
+    findDiagramByName(projectId: string, name: string, diagramType: DiagramType): Promise<C4Diagram | null>;
+    findDiagramsByFilePath(pattern: string): Promise<C4Diagram[]>;
+    
+    // Diagram cache operations - can remain the same
     cacheDiagram(diagramId: string, diagram: string): Promise<void>;
     getCachedDiagram(diagramId: string): Promise<string | null>;
     clearDiagramCache(diagramId: string): Promise<void>;

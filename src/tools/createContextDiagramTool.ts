@@ -54,6 +54,7 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
         // Create a new context diagram
         const diagram = await db.createDiagram(
+          project.id,
           title, 
           description,
           DiagramType.CONTEXT
@@ -63,7 +64,7 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
         const { pumlPath, pngPath } = getDiagramFilePaths(project, title, DiagramType.CONTEXT);
         
         // Update diagram with file paths
-        await db.updateDiagram(diagram.id, {
+        await db.updateDiagram(project.id, diagram.id, {
           pumlPath,
           pngPath
         });
@@ -79,9 +80,6 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
         } catch (diagramError) {
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
-
-        // Add the diagram to the project
-        await db.addDiagramToProject(projectId, diagram.id);
 
         const message = `Created new Context diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system. What is it called, and what does it do?`;
 
