@@ -1,11 +1,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState } from "../plantuml-utils.js";
+import { 
+  createStandardRelationship,
+  createBidirectionalRelationship,
+  createUpRelationship,
+  createDownRelationship,
+  createLeftRelationship,
+  createRightRelationship,
+  createBackRelationship,
+  createNeighborRelationship,
+} from "./internal/relationshipHelpers.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 
 /**
- * Creates a relationship between elements and updates the diagram
+ * Creates a relationship between elements and updates the diagram.
+ * Supports all relationship types from C4-PlantUML including directional variants.
  */
 export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
@@ -20,7 +30,11 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
     - description: String (Description of the relationship)
 
     Optional Input Fields:
-    - technology: String (Optional technology used in the relationship)
+    - technology: String (Technology used in the relationship)
+    - direction: String (Relationship direction: standard, bidirectional, up, down, left, right, back, neighbor)
+    - sprite: String (Icon/sprite for the relationship)
+    - tags: String (Styling tags for the relationship)
+    - link: String (URL link for the relationship)
     
     The response will include unique IDs that you'll need for all subsequent operations,
     as well as a state object that will direct you to the appropriate next step to take.
@@ -35,9 +49,26 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
       sourceId: z.string().describe("ID of the source element"),
       targetId: z.string().describe("ID of the target element"),
       description: z.string().describe("Description of the relationship"),
-      technology: z.string().optional().describe("Optional technology used in the relationship")
+      technology: z.string().optional().describe("Optional technology used in the relationship"),
+      direction: z.enum([
+        'standard', 'bidirectional', 'up', 'down', 'left', 'right', 'back', 'neighbor'
+      ] as const).default('standard').describe("Direction of the relationship"),
+      sprite: z.string().optional().describe("Optional sprite/icon for the relationship"),
+      tags: z.string().optional().describe("Optional styling tags for the relationship"),
+      link: z.string().optional().describe("Optional URL link for the relationship")
     },
-    async ({ projectId, diagramId, sourceId, targetId, description, technology }, extra) => {
+    async ({ 
+      projectId, 
+      diagramId, 
+      sourceId, 
+      targetId, 
+      description, 
+      technology, 
+      direction,
+      sprite,
+      tags,
+      link
+    }, extra) => {
       try {
         // Check if project exists
         const project = await db.getProject(projectId);
@@ -58,34 +89,53 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
           throw new Error("Source or target element not found");
         }
 
-        // Add relationship
-        const relationship = await db.addRelationship(project.id, diagram.id, {
+        // Prepare relationship parameters
+        const params = {
+          projectId,
+          diagramId,
           sourceId,
           targetId,
           description,
-          technology
-        });
+          technology,
+          sprite,
+          tags,
+          link
+        };
+
+        // Call the appropriate helper function based on the direction
+        let result;
+        
+        switch (direction) {
+          case 'bidirectional':
+            result = await createBidirectionalRelationship(params, db);
+            break;
+          case 'up':
+            result = await createUpRelationship(params, db);
+            break;
+          case 'down':
+            result = await createDownRelationship(params, db);
+            break;
+          case 'left':
+            result = await createLeftRelationship(params, db);
+            break;
+          case 'right':
+            result = await createRightRelationship(params, db);
+            break;
+          case 'back':
+            result = await createBackRelationship(params, db);
+            break;
+          case 'neighbor':
+            result = await createNeighborRelationship(params, db);
+            break;
+          case 'standard':
+          default:
+            result = await createStandardRelationship(params, db);
+            break;
+        }
 
         // Get the updated diagram
-        const updatedDiagram = await db.getDiagram(project.id, diagram.id);
-        if (!updatedDiagram) {
-          throw new Error(`Diagram not found after adding relationship: ${diagramId}`);
-        }
-
-        try {
-          // Generate the diagram, save files, and get the PNG data in one step
-          const pngData = await generateDiagramFromState(
-            updatedDiagram,
-            updatedDiagram.pumlPath,
-            updatedDiagram.pngPath
-          );
-          
-          // Cache the diagram for quick access
-          await db.cacheDiagram(diagramId, pngData);
-        } catch (diagramError) {
-          console.warn(`Failed to generate diagram for relationship ${relationship.id}: ${getErrorMessage(diagramError)}`);
-        }
-
+        const updatedDiagram = result.diagram;
+        
         // Get source and target element names for a more descriptive message
         const sourceElement = updatedDiagram.elements.find(e => e.id === sourceId);
         const targetElement = updatedDiagram.elements.find(e => e.id === targetId);
@@ -94,10 +144,16 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
         const sourceName = sourceElement?.name || 'unknown';
         const targetName = targetElement?.name || 'unknown';
         
-        const message = `Added relationship "${description}" from "${sourceName}" to "${targetName}". Are there any other relationships to define?`;
+        // Add direction information to the message
+        let directionInfo = '';
+        if (direction !== 'standard') {
+          directionInfo = ` (${direction})`;
+        }
+        
+        const message = `Added relationship "${description}"${directionInfo} from "${sourceName}" to "${targetName}". Are there any other relationships to define?`;
 
         // Build complete metadata for the diagram
-        const metadata = createDiagramMetadata(diagram, projectId);
+        const metadata = createDiagramMetadata(updatedDiagram, projectId);
 
         return createToolResponse(message, metadata);
       } catch (error) {

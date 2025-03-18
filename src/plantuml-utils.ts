@@ -3,9 +3,6 @@
  * Generates C4 architectural diagrams in PNG format
  */
 import axios from 'axios';
-import fs from 'fs/promises';
-import path from 'path';
-import { getAppRoot } from './initialize.js';
 import { C4Diagram, DiagramType } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePumlFile, savePngFile } from './filesystem-utils.js';

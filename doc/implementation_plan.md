@@ -22,14 +22,14 @@ Our current MCP server successfully supports C1 (Context) diagrams using PlantUM
 - Update interfaces to eliminate workflow state dependencies
 - Keep the core diagram generation functionality
 
-### Phase 2: Enhance File Management
+### Phase 2: Enhance File Management (DONE)
 - Implement the project concept as a container for related diagrams
 - Create a structured filesystem approach with dedicated directories
 - Save both PUML and PNG outputs for each diagram
 - Add tool descriptions that encourage the AI to ask for save locations
 - Establish consistent naming conventions that encode relationships
 
-### Phase 3: Evaluation (C1)
+### Phase 3: Evaluation (C1) (DONE)
 - Test the current implementation with example conversations
 - Verify that the AI correctly asks for file locations
 - Ensure proper saving of both PUML and PNG files
