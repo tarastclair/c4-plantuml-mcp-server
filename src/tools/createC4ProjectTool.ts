@@ -104,7 +104,7 @@ export const createC4ProjectTool = (server: McpServer, db: DiagramDb): void => {
         // Store the project (assuming we've updated the DiagramDb class with project methods)
         await db.createProject(project);
 
-        const message = `Created new C4 architecture project "${name}" at ${fullProjectPath}.\n\nYou can now create diagrams within this project using the following tools:\n- create-context-diagram (for Level 1 Context diagrams)\n- create-container-diagram (for Level 2 Container diagrams)\n- create-component-diagram (for Level 3 Component diagrams)\n- create-code-diagram (for Level 4 Code diagrams)\n\nWhat type of diagram would you like to create first?`;
+        const message = `Created new C4 architecture project "${project.name}" with ID ${project.id} at ${fullProjectPath}.\n\nYou can now create diagrams within this project using the following tools:\n- create-context-diagram (for Level 1 Context diagrams)\n- create-container-diagram (for Level 2 Container diagrams)\n- create-component-diagram (for Level 3 Component diagrams)\n- create-code-diagram (for Level 4 Code diagrams)\n\nWhat type of diagram would you like to create first?`;
 
         return createToolResponse(message, {
             projectId: project.id,

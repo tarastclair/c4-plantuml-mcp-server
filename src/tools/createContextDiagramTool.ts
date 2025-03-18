@@ -83,16 +83,14 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
         // Add the diagram to the project
         await db.addDiagramToProject(projectId, diagram.id);
 
-        const message = `Created new Context diagram "${title}" in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system. What is it called, and what does it do?`;
+        const message = `Created new Context diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system. What is it called, and what does it do?`;
+
+        // Build entity mappings to help the client know what entities are available
+        const entityMappings = buildEntityMappings(diagram);
 
         return createToolResponse(message, {
           projectId,
-          entityIds: {
-            [diagram.id]: {
-              elements: {},
-              relationships: {}
-            }
-          }
+          entityIds: entityMappings
         });
       } catch (error) {
         return createErrorResponse(`Error creating context diagram: ${getErrorMessage(error)}`);
