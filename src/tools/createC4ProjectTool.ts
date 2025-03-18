@@ -108,10 +108,8 @@ export const createC4ProjectTool = (server: McpServer, db: DiagramDb): void => {
 
         return createToolResponse(message, {
             projectId: project.id,
-            // Since we don't have any diagrams yet, we can either:
-            // 1. Omit entityIds (it's optional in our type)
-            // 2. Or provide an empty structure
-            entityIds: {} // Empty object since we don't have any diagrams yet
+            diagramId: '',
+            diagrams: {}
           });
       } catch (error) {
         return createErrorResponse(`Error creating project: ${getErrorMessage(error)}`);

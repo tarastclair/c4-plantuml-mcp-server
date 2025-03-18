@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState } from "../plantuml-utils.js";
 import { BaseElementType, C4Element, ElementVariant } from "../types-and-interfaces.js";
-import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
+import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
 /**
  * Implementation of update-element tool for diagram refinement
@@ -123,13 +123,10 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
         
         const message = `Element "${elementName}" updated successfully. Should we make any other refinements?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(updatedDiagram);
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
 
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error updating element: ${getErrorMessage(error)}`);
       }

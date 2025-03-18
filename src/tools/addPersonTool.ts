@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 
 /**
  * Creates a person/actor element and updates the diagram
@@ -107,13 +107,10 @@ export const registerAddPersonTool = (server: McpServer, db: DiagramDb): void =>
         }
         const message = `${baseMessage}\n\nAre there any other users or actors that need to be identified, or should we move onto identifying other diagram elements?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(updatedDiagram);
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
 
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error adding person: ${getErrorMessage(error)}`);
       }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState } from "../plantuml-utils.js";
 import { C4Relationship } from "../types-and-interfaces.js";
-import { createToolResponse, getErrorMessage, createErrorResponse, buildEntityMappings } from "../utils.js";
+import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
 /**
  * Implementation of update-relationship tool for diagram refinement
@@ -125,13 +125,10 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
         
         const message = `Updated relationship "${updatedRelationship.description}" from "${sourceName}" to "${targetName}". Should we make any other refinements?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(updatedDiagram);
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
 
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error updating relationship: ${getErrorMessage(error)}`);
       }

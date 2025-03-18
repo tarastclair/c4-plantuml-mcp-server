@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 
 /**
  * Creates a relationship between elements and updates the diagram
@@ -100,13 +100,10 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
         
         const message = `Added relationship "${description}" from "${sourceName}" to "${targetName}". Are there any other relationships to define?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(updatedDiagram);
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
 
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error adding relationship: ${getErrorMessage(error)}`);
       }

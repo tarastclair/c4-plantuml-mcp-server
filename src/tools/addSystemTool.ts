@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateDiagramFromState } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 
 /**
  * Creates a system element and updates the diagram
@@ -82,13 +82,10 @@ export const addSystemTool = (server: McpServer, db: DiagramDb): void => {
         const baseMessage = `Added new system "${name}" to the diagram.`;
         const message = `${baseMessage}\n\nAre there any other systems that we need to identify, or should we move onto identifying external systems?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(updatedDiagram);
-        
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
+
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error adding system: ${getErrorMessage(error)}`);
       }

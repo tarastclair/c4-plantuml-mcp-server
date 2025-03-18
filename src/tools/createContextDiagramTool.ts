@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { generateEmptyDiagram } from "../plantuml-utils.js";
-import { createToolResponse, createErrorResponse, getErrorMessage, buildEntityMappings } from "../utils.js";
-import { getDiagramFilePaths, savePumlFile, savePngFile } from "../filesystem-utils.js";
+import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
+import { getDiagramFilePaths } from "../filesystem-utils.js";
 import { DiagramType } from "../types-and-interfaces.js"; 
 
 /**
@@ -85,13 +85,10 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
         const message = `Created new Context diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system. What is it called, and what does it do?`;
 
-        // Build entity mappings to help the client know what entities are available
-        const entityMappings = buildEntityMappings(diagram);
+        // Build complete metadata for the diagram
+        const metadata = createDiagramMetadata(diagram, projectId);
 
-        return createToolResponse(message, {
-          projectId,
-          entityIds: entityMappings
-        });
+        return createToolResponse(message, metadata);
       } catch (error) {
         return createErrorResponse(`Error creating context diagram: ${getErrorMessage(error)}`);
       }
