@@ -87,22 +87,34 @@ async function createContainerCore(
     if (!boundary) {
       throw new Error(`Boundary element not found or not a valid boundary: ${params.boundaryId}`);
     }
-    
-    // Set the parentId to establish the relationship
-    metadata.parentId = params.boundaryId;
   }
 
-  // Add the container element to the diagram
-  const element = await db.addElement(params.projectId, params.diagramId, {
+  // Create element object with potential parentId
+  const elementData: Omit<C4Element, 'id'> = {
     descriptor: {
       baseType: 'container' as BaseElementType,
       variant: variant
     },
     name: params.name,
     description: params.description,
-    technology: params.technology,
-    metadata: Object.keys(metadata).length > 0 ? metadata : undefined
-  });
+    technology: params.technology
+  };
+
+  // Add parentId directly if a boundary is specified
+  if (params.boundaryId) {
+    // Validate that the boundary exists...
+    
+    // Set the parentId directly on the element
+    elementData.parentId = params.boundaryId as string;
+  }
+
+  // Add metadata if needed
+  if (Object.keys(metadata).length > 0) {
+    elementData.metadata = metadata;
+  }
+
+  // Add the container element to the diagram
+  const element = await db.addElement(params.projectId, params.diagramId, elementData);
 
   // Get the updated diagram state
   const updatedDiagram = await db.getDiagram(params.projectId, params.diagramId);

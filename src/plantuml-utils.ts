@@ -219,40 +219,121 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
 };
 
 // Helper function to process elements hierarchically
-function processElements(elements: C4Element[], parentId: string | null = null, indent: string = ''): string[] {
+function processElements(elements: C4Element[]): string[] {
   const lines: string[] = [];
   
-  // Find direct children of the current parent (or top-level elements if parentId is null)
-  const directChildren = elements.filter(e => e.parentId === parentId);
+  // Keep track of which elements we've already processed
+  const processedElementIds = new Set<string>();
   
-  // Process each child
-  directChildren.forEach(element => {
+  // Step 1: First process all elements that ARE NOT in a boundary
+  elements.forEach(element => {
+    // Skip if this element is a child of a boundary
+    if (element.parentId) {
+      return;
+    }
+    
+    // Skip if this element is a boundary - we'll handle those in step 2
+    if (element.descriptor.variant === 'boundary') {
+      return;
+    }
+    
     const id = element.id.replace(/[^\w]/g, '_');
     const name = element.name;
     const description = element.description;
     const macro = getElementMacro(element);
     const techStr = element.technology ? `, "${element.technology}"` : '';
     
-    // If this is a boundary, handle it and its children recursively
-    if (element.descriptor.variant === 'boundary') {
-      // Start boundary
-      lines.push(`${indent}${macro}(${id}, "${name}", "${description}") {`);
-      
-      // Process children recursively with increased indentation
-      const childLines = processElements(elements, element.id, indent + '  ');
-      lines.push(...childLines);
-      
-      // Close boundary
-      lines.push(`${indent}}`);
+    // Add standalone elements
+    if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
+      lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}")`);
     } else {
-      // Regular element
-      if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
-        lines.push(`${indent}${macro}(${id}, "${name}"${techStr}, "${description}")`);
-      } else {
-        lines.push(`${indent}${macro}(${id}, "${name}", "${description}")`);
-      }
+      lines.push(`${macro}(${id}, "${name}", "${description}")`);
     }
+    
+    // Mark as processed
+    processedElementIds.add(element.id);
   });
+  
+  // Step 2: Process all boundary elements (with their children)
+  elements.forEach(element => {
+    // Skip if not a boundary
+    if (element.descriptor.variant !== 'boundary') {
+      return;
+    }
+    
+    // Skip if this boundary is itself a child of another boundary
+    // (we would need recursion to handle this, but for MVP we'll just make it flat)
+    if (element.parentId) {
+      // Just add the boundary as a regular element
+      const id = element.id.replace(/[^\w]/g, '_');
+      const name = element.name;
+      const description = element.description;
+      const macro = getElementMacro(element);
+      
+      lines.push(`${macro}(${id}, "${name}", "${description}")`);
+      processedElementIds.add(element.id);
+      return;
+    }
+    
+    // It's a top-level boundary - render it with its children
+    const id = element.id.replace(/[^\w]/g, '_');
+    const name = element.name;
+    const description = element.description;
+    const macro = getElementMacro(element);
+    
+    // Start boundary
+    lines.push(`${macro}(${id}, "${name}", "${description}") {`);
+    
+    // Find children of this boundary
+    const children = elements.filter(e => e.parentId === element.id);
+    
+    // Process children elements
+    if (children.length > 0) {
+      children.forEach(child => {
+        const childId = child.id.replace(/[^\w]/g, '_');
+        const childName = child.name;
+        const childDesc = child.description;
+        const childMacro = getElementMacro(child);
+        const childTechStr = child.technology ? `, "${child.technology}"` : '';
+        
+        if (child.descriptor.baseType === 'container' || child.descriptor.baseType === 'component') {
+          lines.push(`  ${childMacro}(${childId}, "${childName}"${childTechStr}, "${childDesc}")`);
+        } else {
+          lines.push(`  ${childMacro}(${childId}, "${childName}", "${childDesc}")`);
+        }
+        
+        // Mark as processed
+        processedElementIds.add(child.id);
+      });
+    }
+    
+    // Close boundary
+    lines.push('}');
+    
+    // Mark boundary as processed
+    processedElementIds.add(element.id);
+  });
+  
+  // Step 3: Final sweep - add any elements that weren't processed yet
+  // This handles elements that might have parentId but their parent doesn't exist
+  elements.forEach(element => {
+    if (!processedElementIds.has(element.id)) {
+      const id = element.id.replace(/[^\w]/g, '_');
+      const name = element.name;
+      const description = element.description;
+      const macro = getElementMacro(element);
+      const techStr = element.technology ? `, "${element.technology}"` : '';
+      
+      // Add any remaining elements
+      if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
+        lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}")`);
+      } else {
+        lines.push(`${macro}(${id}, "${name}", "${description}")`);
+      }
+      
+      // Just for completion's sake
+      processedElementIds.add(element.id);
+    }});
   
   return lines;
 }
