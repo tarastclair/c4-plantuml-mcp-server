@@ -78,16 +78,9 @@ export interface C4Diagram {
     metadata?: Record<string, unknown>;
 }
 
-export interface DiagramCache {
-    diagramId: string;
-    diagram: string;
-    generated: string;
-}
-
 // Database schema
 export interface DatabaseSchema {
     projects: Project[];
-    diagramCache: DiagramCache[];
 }
 
 // Database interface
@@ -116,9 +109,4 @@ export interface DiagramStorage {
     // Helper methods
     findDiagramByName(projectId: string, name: string, diagramType: DiagramType): Promise<C4Diagram | null>;
     findDiagramsByFilePath(pattern: string): Promise<C4Diagram[]>;
-    
-    // Diagram cache operations - can remain the same
-    cacheDiagram(diagramId: string, diagram: string): Promise<void>;
-    getCachedDiagram(diagramId: string): Promise<string | null>;
-    clearDiagramCache(diagramId: string): Promise<void>;
 }

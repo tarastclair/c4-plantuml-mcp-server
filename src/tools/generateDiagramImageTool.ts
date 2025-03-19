@@ -68,10 +68,7 @@ export const generateDiagramImageTool = (server: McpServer, db: DiagramDb): void
         
         // Generate and save the PNG image
         try {
-          const pngData = await generateAndSaveDiagramImage(pumlContent, diagram.pngPath);
-          
-          // Cache the diagram in the database
-          await db.cacheDiagram(diagramId, pngData);
+          await generateAndSaveDiagramImage(pumlContent, diagram.pngPath);
           
           const message = `Successfully generated PNG image for diagram "${diagram.name}". The image has been saved to ${diagram.pngPath}`;
 

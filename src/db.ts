@@ -8,7 +8,6 @@ import {
     C4Relationship, 
     DatabaseSchema, 
     DiagramStorage,
-    DiagramCache,
     Project,
     DiagramType
 } from './types-and-interfaces.js';
@@ -29,7 +28,6 @@ export class DiagramDb implements DiagramStorage {
         // Ensure we have a consistent db file location
         const adapter = new JSONFile<DatabaseSchema>(join(dbPath, 'diagrams.json'));
         this.db = new Low(adapter, { 
-            diagramCache: [],
             projects: [] 
         });
     }
@@ -44,7 +42,6 @@ export class DiagramDb implements DiagramStorage {
         // Ensure we have our collections
         if (!this.db.data) {
             this.db.data = { 
-                diagramCache: [],
                 projects: [] 
             };
             await this.db.write();
@@ -507,43 +504,5 @@ export class DiagramDb implements DiagramStorage {
         await this.db.write();
         
         return updated;
-    }
-
-    /**
-     * Cache an image for a diagram
-     * Replaces existing cache if present
-     */
-    async cacheDiagram(diagramId: string, diagram: string): Promise<void> {
-        const cacheIndex = this.db.data.diagramCache.findIndex(c => c.diagramId === diagramId);
-        const cache: DiagramCache = {
-            diagramId,
-            diagram,
-            generated: new Date().toISOString()
-        };
-
-        if (cacheIndex === -1) {
-            this.db.data.diagramCache.push(cache);
-        } else {
-            this.db.data.diagramCache[cacheIndex] = cache;
-        }
-
-        await this.db.write();
-    }
-
-    /**
-     * Retrieve cached image for a diagram
-     * Returns null if no cache exists
-     */
-    async getCachedDiagram(diagramId: string): Promise<string | null> {
-        const cache = this.db.data.diagramCache.find(c => c.diagramId === diagramId);
-        return cache?.diagram || null;
-    }
-
-    /**
-     * Clear cached image for a diagram
-     */
-    async clearDiagramCache(diagramId: string): Promise<void> {
-        this.db.data.diagramCache = this.db.data.diagramCache.filter(c => c.diagramId !== diagramId);
-        await this.db.write();
     }
 }
