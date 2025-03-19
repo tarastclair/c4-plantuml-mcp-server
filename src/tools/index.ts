@@ -10,6 +10,7 @@ import { createContextDiagramTool } from "./createContextDiagramTool.js";
 import { addElementTool } from "./addElementTool.js";
 import { addRelationshipTool } from "./addRelationshipTool.js";
 import { createC4ProjectTool } from "./createC4ProjectTool.js";
+import { deleteElementTool } from "./deleteElementTool.js";
 
 /**
  * Register all tools with the MCP server
@@ -24,4 +25,5 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   addElementTool(server, db);
   addRelationshipTool(server, db);
   createC4ProjectTool(server, db);
+  deleteElementTool(server, db);
 };

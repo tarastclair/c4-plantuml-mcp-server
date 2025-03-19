@@ -116,7 +116,7 @@ Based on the [C4-PlantUML documentation](https://github.com/plantuml-stdlib/C4-P
 - [x] Create unified addRelationshipTool.ts
 - [x] Update tools/index.ts to register new unified tools
 - [x] Validate that we can still create context diagrams
-- [ ] Implement delete DB functions
+- [x] Implement delete DB functions
 - [ ] Validate that we can now create container diagrams
 - [ ] Implement componentEntityHelpers.ts
 - [ ] Implement boundaryEntityHelpers.ts
