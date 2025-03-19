@@ -51,20 +51,21 @@ const sleep = (ms: number): Promise<void> => {
 
 /**
  * Generates a PNG diagram from PlantUML markup by calling the public PlantUML server
- * Implements retry logic with exponential backoff for intermittent server issues
+ * Implements robust retry logic with exponential backoff for intermittent server issues
  * 
  * @param puml PlantUML markup to render
  * @param pngPath Path where PNG file should be saved
- * @param maxRetries Maximum number of retry attempts (default: 3)
+ * @param maxRetries Maximum number of retry attempts (default: 5)
  * @param initialDelay Initial delay in ms between retries (default: 1s)
  * @returns PNG data as a base64 string
  */
 export const generateAndSaveDiagramImage = async (
   puml: string,
   pngPath: string,
-  maxRetries = 3,
+  maxRetries = 5,
   initialDelay = 1000
 ): Promise<string> => {
+  // Encode the PlantUML for the URL
   const encoded = encodePlantUML(puml);
   let lastError: Error | null = null;
   
@@ -76,13 +77,16 @@ export const generateAndSaveDiagramImage = async (
         console.error(`Retrying PlantUML diagram generation (attempt ${attempt + 1} of ${maxRetries + 1})`);
       }
       
+      // Make the request to the public PlantUML server
       const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {
         responseType: 'arraybuffer',
-        timeout: 10000 // 10 second timeout to avoid hanging
+        timeout: 15000 // 15 second timeout to avoid hanging on slow responses
       });
 
+      // Convert the binary response to base64
       const pngData = Buffer.from(response.data).toString('base64');
 
+      // Save the PNG file using our utility
       await savePngFile(pngPath, pngData);
       
       return pngData;
@@ -98,12 +102,10 @@ export const generateAndSaveDiagramImage = async (
         
         errorMessage = `PlantUML Server Error (attempt ${attempt + 1}/${maxRetries + 1}): HTTP ${status} ${statusText}`;
         
-        // Determine if we should retry
-        // Only skip retrying on definite client errors that won't change with retries
-        const permanentClientError = status === 400  // Changed: now we will retry even 400 errors
-          || status === 401 
-          || status === 403 
-          || status === 422;
+        // We'll retry ALL errors since 400s and 509s are often temporary with the public server
+        // Only skip retrying on client errors that won't change with retries
+        const permanentClientError = status === 401 
+          || status === 403;
         
         // If this is our last attempt OR it's a permanent client error, throw
         if (attempt >= maxRetries || permanentClientError) {
