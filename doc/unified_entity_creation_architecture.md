@@ -117,12 +117,13 @@ Based on the [C4-PlantUML documentation](https://github.com/plantuml-stdlib/C4-P
 - [x] Update tools/index.ts to register new unified tools
 - [x] Validate that we can still create context diagrams
 - [x] Implement delete DB functions
-- [ ] Validate that we can now create container diagrams
+- [x] Validate that we can now create container diagrams
 - [ ] Implement componentEntityHelpers.ts
 - [ ] Implement boundaryEntityHelpers.ts
 - [ ] Update addEntityTool.ts to support all entity types
 - [ ] Validate that we can now create component diagrams
 - [ ] Test what happens when you create different levels from different chats
+- [ ] What happens if you don't have filesystem?
 - [ ] Replace all console.errors
 - [ ] ...code diagrams
 

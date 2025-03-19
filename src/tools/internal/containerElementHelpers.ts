@@ -18,6 +18,7 @@ export interface ContainerParams {
   name: string;
   description: string;
   technology: string;  // Required for containers (unlike persons/systems)
+  boundaryId?: String // Optional UUID of the boundary element this element belongs to
   sprite?: string;     // Optional sprite/icon
   tags?: string;       // Optional tags for styling
   link?: string;       // Optional URL link
@@ -76,6 +77,20 @@ async function createContainerCore(
   if (params.tags) metadata.tags = params.tags;
   if (params.link) metadata.link = params.link;
   if (params.baseShape) metadata.baseShape = params.baseShape;
+  if (params.boundaryId) {
+    // Validate that the boundary exists and is a valid boundary element
+    const boundary = diagram.elements.find(e => 
+      e.id === params.boundaryId && 
+      e.descriptor.variant === 'boundary'
+    );
+    
+    if (!boundary) {
+      throw new Error(`Boundary element not found or not a valid boundary: ${params.boundaryId}`);
+    }
+    
+    // Set the parentId to establish the relationship
+    metadata.parentId = params.boundaryId;
+  }
 
   // Add the container element to the diagram
   const element = await db.addElement(params.projectId, params.diagramId, {

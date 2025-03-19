@@ -10,8 +10,8 @@ Here is an example of a context diagram generated exclusively by Claude for this
 ## Feature Roadmap
 - [x] Support context diagram creation
 - [ ] Support system boundaries
-- [ ] Support bi-directional relationships
-- [ ] Support extended system types (Db, Queue)
+- [x] Support bi-directional relationships
+- [x] Support extended system types (Db, Queue)
 - [ ] Support icons and sprites
 - [ ] Support container diagram creation
 - [ ] Support component diagram creation
@@ -65,15 +65,10 @@ npm run build
 
 ## Usage Example
 
-Once configured, you can start a new diagram by telling Claude something like:
+*Insert video here*
 
-"I need to create a context diagram for this code base."
+### Tips
 
-Claude will help you work through:
-1. Defining your core system
-2. Identifying users and actors
-3. Adding external system dependencies
-4. Establishing relationships between components
-5. Refining the diagram details
-
-The conversation will generate a PlantUML diagram that follows C4 methodology.
+- You do not need any other MCP servers configured in order for this tool to be functional, but having `sequential-thinking` installed will greatly enhance your experience.
+- This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
+- If the AI does not automatically call the generate-diagram-image tool to create the png version of your diagram, you can prompt it to do so after it has finished designing your diagram.

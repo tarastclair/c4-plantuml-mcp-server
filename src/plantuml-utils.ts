@@ -3,7 +3,7 @@
  * Generates C4 architectural diagrams in PNG format
  */
 import axios from 'axios';
-import { C4Diagram, DiagramType } from './types-and-interfaces.js';
+import { C4Diagram, DiagramType, C4Element } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePumlFile, savePngFile } from './filesystem-utils.js';
 
@@ -56,14 +56,14 @@ const sleep = (ms: number): Promise<void> => {
  * @param puml PlantUML markup to render
  * @param pngPath Path where PNG file should be saved
  * @param maxRetries Maximum number of retry attempts (default: 3)
- * @param initialDelay Initial delay in ms between retries (default: 500ms)
+ * @param initialDelay Initial delay in ms between retries (default: 1s)
  * @returns PNG data as a base64 string
  */
 export const generateAndSaveDiagramImage = async (
   puml: string,
   pngPath: string,
   maxRetries = 3,
-  initialDelay = 500
+  initialDelay = 1000
 ): Promise<string> => {
   const encoded = encodePlantUML(puml);
   let lastError: Error | null = null;
@@ -73,7 +73,7 @@ export const generateAndSaveDiagramImage = async (
     try {
       // If this isn't the first attempt, log that we're retrying
       if (attempt > 0) {
-        // console.log(`Retrying PlantUML diagram generation (attempt ${attempt} of ${maxRetries})`);
+        console.error(`Retrying PlantUML diagram generation (attempt ${attempt + 1} of ${maxRetries + 1})`);
       }
       
       const response = await axios.get(`https://www.plantuml.com/plantuml/png/${encoded}`, {
@@ -85,43 +85,48 @@ export const generateAndSaveDiagramImage = async (
 
       await savePngFile(pngPath, pngData);
       
-      return pngData
+      return pngData;
     } catch (error: any) {
       lastError = error;
       
-      // Log detailed error information
+      // Prepare a descriptive error message
+      let errorMessage = '';
+      
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const statusText = error.response?.statusText || '';
-        console.error(`PlantUML Server Error (attempt ${attempt + 1}/${maxRetries + 1}):`);
-        console.error(`Status: ${status} ${statusText}`);
         
-        // Only worth retrying certain types of errors
-        const shouldRetry = !status || // network error
-          status === 408 || // request timeout
-          status === 429 || // too many requests
-          status === 500 || // server error
-          status === 502 || // bad gateway
-          status === 503 || // service unavailable
-          status === 504;   // gateway timeout
+        errorMessage = `PlantUML Server Error (attempt ${attempt + 1}/${maxRetries + 1}): HTTP ${status} ${statusText}`;
         
-        if (!shouldRetry || attempt >= maxRetries) {
-          // Don't retry client errors or if we've used all our retries
-          const errorMessage = `PlantUML server error: HTTP ${status} ${statusText}`;
+        // Determine if we should retry
+        // Only skip retrying on definite client errors that won't change with retries
+        const permanentClientError = status === 400  // Changed: now we will retry even 400 errors
+          || status === 401 
+          || status === 403 
+          || status === 422;
+        
+        // If this is our last attempt OR it's a permanent client error, throw
+        if (attempt >= maxRetries || permanentClientError) {
+          console.error(errorMessage);
           throw new Error(errorMessage);
         }
       } else {
-        console.error(`PlantUML generation error (attempt ${attempt + 1}/${maxRetries + 1}):`, error.message);
+        // For non-Axios errors (network issues, etc.)
+        errorMessage = `PlantUML generation error (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message}`;
         
+        // If this is our last attempt, throw
         if (attempt >= maxRetries) {
-          // We've used all our retries
+          console.error(errorMessage);
           throw new Error(`Failed to generate diagram: ${error.message}`);
         }
       }
       
+      // Log the error but continue with retry
+      console.error(errorMessage);
+      
       // Calculate backoff delay with jitter to avoid thundering herd
       const delay = initialDelay * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
-      // console.log(`Waiting ${Math.round(delay)}ms before retry...`);
+      console.error(`Waiting ${Math.round(delay)}ms before retry...`);
       await sleep(delay);
     }
   }
@@ -138,9 +143,22 @@ export const generateAndSaveDiagramImage = async (
  * @returns PlantUML macro name
  */
 export function getElementMacro(element: {
-  descriptor: { baseType: string; variant?: string }
+  descriptor: { baseType: string; variant?: string; boundaryType?: string }
 }): string {
-  const { baseType, variant } = element.descriptor;
+  const { baseType, variant, boundaryType } = element.descriptor;
+  
+  // Handle boundary elements
+  if (variant === 'boundary') {
+    if (boundaryType === 'enterprise') {
+      return 'Enterprise_Boundary';
+    } else if (boundaryType === 'system') {
+      return 'System_Boundary';
+    } else if (boundaryType === 'container') {
+      return 'Container_Boundary';
+    } else {
+      return 'Boundary'; // Default boundary
+    }
+  }
   
   // Start with the base element type (capitalized)
   let macro = baseType.charAt(0).toUpperCase() + baseType.slice(1);
@@ -176,7 +194,7 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
   lines.push(getPlantUMLImport(diagram.diagramType));
   lines.push('');
   
-  // Title and description as a note
+  // Title and description
   lines.push(`title ${diagram.name}`);
   if (diagram.description) {
     lines.push('');
@@ -185,28 +203,62 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
     lines.push('end note');
   }
   lines.push('');
+  
+  // Process elements hierarchically
+  const elementLines = processElements(diagram.elements);
+  lines.push(...elementLines);
+  lines.push('');
+  
+  // Add relationships
+  addRelationships(diagram, lines);
+  
+  // Footer
+  lines.push('@enduml');
+  
+  return lines.join('\n');
+};
 
-  // Add elements by type using our descriptor-based approach
-  diagram.elements.forEach(element => {
+// Helper function to process elements hierarchically
+function processElements(elements: C4Element[], parentId: string | null = null, indent: string = ''): string[] {
+  const lines: string[] = [];
+  
+  // Find direct children of the current parent (or top-level elements if parentId is null)
+  const directChildren = elements.filter(e => e.parentId === parentId);
+  
+  // Process each child
+  directChildren.forEach(element => {
     const id = element.id.replace(/[^\w]/g, '_');
     const name = element.name;
     const description = element.description;
-    
-    // Get the appropriate PlantUML macro based on element type
     const macro = getElementMacro(element);
-    
-    // Add technology parameter for container and component elements if available
     const techStr = element.technology ? `, "${element.technology}"` : '';
     
-    // Generate the element definition
-    if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
-      lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}")`);
+    // If this is a boundary, handle it and its children recursively
+    if (element.descriptor.variant === 'boundary') {
+      // Start boundary
+      lines.push(`${indent}${macro}(${id}, "${name}", "${description}") {`);
+      
+      // Process children recursively with increased indentation
+      const childLines = processElements(elements, element.id, indent + '  ');
+      lines.push(...childLines);
+      
+      // Close boundary
+      lines.push(`${indent}}`);
     } else {
-      lines.push(`${macro}(${id}, "${name}", "${description}")`);
+      // Regular element
+      if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
+        lines.push(`${indent}${macro}(${id}, "${name}"${techStr}, "${description}")`);
+      } else {
+        lines.push(`${indent}${macro}(${id}, "${name}", "${description}")`);
+      }
     }
   });
-  lines.push('');
+  
+  return lines;
+}
 
+// Function to add relationships after all elements are defined
+function addRelationships(diagram: C4Diagram, lines: string[]): void {
   // Track processed relationships to prevent duplicates
   const processedRels = new Set<string>();
 
@@ -230,13 +282,7 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
       }
     }
   });
-  lines.push('');
-
-  // Footer
-  lines.push('@enduml');
-
-  return lines.join('\n');
-};
+}
 
 /**
  * Generates a PlantUML diagram from the current diagram state and saves it to disk

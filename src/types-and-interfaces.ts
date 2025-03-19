@@ -49,6 +49,7 @@ export interface C4Element {
     name: string;
     description: string;
     technology?: string;  // For container and component elements
+    parentId?: string;  // Reference to parent boundary element
     metadata?: Record<string, unknown>;
 }
 

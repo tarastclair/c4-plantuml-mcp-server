@@ -25,6 +25,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     
     Conditional Input Fields:
     - technology: String (Required for container and component entities)
+    - boundaryId: String (Optional UUID of the boundary element this element belongs to)
     - sprite: String (Optional icon for the element)
     - tags: String (Optional styling tags)
     - link: String (Optional URL link)
@@ -46,6 +47,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
       name: z.string().describe("Name of the element"),
       description: z.string().describe("Description of the element"),
       technology: z.string().optional().describe("Technology used (required for container and component entities)"),
+      boundaryId: z.string().optional().describe("UUID of the boundary element this element belongs to"),
       sprite: z.string().optional().describe("Optional icon for the element"),
       tags: z.string().optional().describe("Optional styling tags"),
       link: z.string().optional().describe("Optional URL link"),
