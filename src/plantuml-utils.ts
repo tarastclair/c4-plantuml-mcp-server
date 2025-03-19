@@ -54,12 +54,14 @@ const sleep = (ms: number): Promise<void> => {
  * Implements retry logic with exponential backoff for intermittent server issues
  * 
  * @param puml PlantUML markup to render
+ * @param pngPath Path where PNG file should be saved
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @param initialDelay Initial delay in ms between retries (default: 500ms)
  * @returns PNG data as a base64 string
  */
-export const generateDiagram = async (
+export const generateAndSaveDiagramImage = async (
   puml: string,
+  pngPath: string,
   maxRetries = 3,
   initialDelay = 500
 ): Promise<string> => {
@@ -78,8 +80,12 @@ export const generateDiagram = async (
         responseType: 'arraybuffer',
         timeout: 10000 // 10 second timeout to avoid hanging
       });
+
+      const pngData = Buffer.from(response.data).toString('base64');
+
+      await savePngFile(pngPath, pngData);
       
-      return Buffer.from(response.data).toString('base64');
+      return pngData
     } catch (error: any) {
       lastError = error;
       
@@ -237,14 +243,12 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
  * 
  * @param diagram Current diagram state with elements and relationships
  * @param pumlPath Path where PUML file should be saved (null to skip saving)
- * @param pngPath Path where PNG file should be saved (null to skip saving)
- * @returns PNG diagram as a base64 string
+ * @returns nothing
  */
-export const generateDiagramFromState = async (
+export const generateDiagramSourceFromFile = async (
   diagram: C4Diagram,
   pumlPath?: string | null,
-  pngPath?: string | null
-): Promise<string> => {
+): Promise<void> => {
   try {
     // Generate PlantUML source
     const pumlContent = generatePlantUMLSource(diagram);
@@ -254,16 +258,7 @@ export const generateDiagramFromState = async (
       await savePumlFile(pumlPath, pumlContent);
     }
     
-    // Generate PNG
-    const pngData = await generateDiagram(pumlContent);
-    
-    // Save PNG file if path provided
-    if (pngPath) {
-      await savePngFile(pngPath, pngData);
-    }
-    
-    // Return the PNG data for caching or other uses
-    return pngData;
+    return;
   } catch (error) {
     console.error('Error generating or saving diagram:', error);
     throw error;
@@ -277,14 +272,12 @@ export const generateDiagramFromState = async (
  * 
  * @param diagram Diagram metadata with type
  * @param pumlPath Path where the PUML file should be saved (null to skip saving)
- * @param pngPath Path where the PNG file should be saved (null to skip saving)
- * @returns PNG diagram as a base64 string
+ * @returns nothing
  */
 export const generateEmptyDiagram = async (
   diagram: C4Diagram,
   pumlPath?: string | null,
-  pngPath?: string | null
-): Promise<string> => {
+): Promise<void> => {
   const lines: string[] = [];
   
   // Header with appropriate include based on diagram type
@@ -344,14 +337,7 @@ export const generateEmptyDiagram = async (
       await savePumlFile(pumlPath, pumlContent);
     }
     
-    // Generate PNG and save it if path provided
-    const pngData = await generateDiagram(pumlContent);
-    if (pngPath) {
-      await savePngFile(pngPath, pngData);
-    }
-    
-    // Return the PNG data for caching or other uses
-    return pngData;
+    return;
   } catch (error) {
     console.error('Error generating or saving diagram:', error);
     throw error;

@@ -123,6 +123,7 @@ Based on the [C4-PlantUML documentation](https://github.com/plantuml-stdlib/C4-P
 - [ ] Update addEntityTool.ts to support all entity types
 - [ ] Validate that we can now create component diagrams
 - [ ] Test what happens when you create different levels from different chats
+- [ ] Replace all console.errors
 - [ ] ...code diagrams
 
 

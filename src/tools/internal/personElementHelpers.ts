@@ -6,7 +6,7 @@
  */
 import { DiagramDb } from "../../db.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
-import { generateDiagramFromState } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromFile } from "../../plantuml-utils.js";
 
 /**
  * Common parameters for person element creation
@@ -75,11 +75,8 @@ async function createPersonCore(
     throw new Error(`Diagram not found after adding element: ${params.diagramId}`);
   }
 
-  // Generate the diagram ONCE and use the result for both saving to disk and caching
-  const pngData = await generateDiagramFromState(updatedDiagram, updatedDiagram.pumlPath, updatedDiagram.pngPath);
-  
-  // Cache the same diagram data without making a second API call
-  await db.cacheDiagram(updatedDiagram.id, pngData);
+  // Generate the diagram PUML and save it to disk
+  await generateDiagramSourceFromFile(updatedDiagram, updatedDiagram.pumlPath);
 
   return {
     element,

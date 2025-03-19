@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramFromState } from "../plantuml-utils.js";
+import { generateDiagramSourceFromFile } from "../plantuml-utils.js";
 import { BaseElementType, C4Element, ElementVariant } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
@@ -101,14 +101,10 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
 
         try {
           // Generate the diagram, save files, and get the PNG data in one step
-          const pngData = await generateDiagramFromState(
+          const pngData = await generateDiagramSourceFromFile(
             updatedDiagram,
-            updatedDiagram.pumlPath,
-            updatedDiagram.pngPath
+            updatedDiagram.pumlPath
           );
-          
-          // Cache the diagram for quick access
-          await db.cacheDiagram(diagramId, pngData);
         } catch (diagramError) {
           console.warn(`Failed to generate diagram after updating element ${elementId}: ${getErrorMessage(diagramError)}`);
         }

@@ -6,7 +6,7 @@
  */
 import { DiagramDb } from "../../db.js";
 import { C4Diagram, C4Relationship } from "../../types-and-interfaces.js";
-import { generateDiagramFromState } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromFile } from "../../plantuml-utils.js";
 
 /**
  * Direction options for relationships
@@ -94,11 +94,8 @@ async function createRelationshipCore(
     throw new Error(`Diagram not found after adding relationship: ${params.diagramId}`);
   }
 
-  // Update the diagram files
-  const diagramData = await generateDiagramFromState(updatedDiagram, updatedDiagram.pumlPath, updatedDiagram.pngPath);
-  
-  // Cache diagram in database
-  await db.cacheDiagram(updatedDiagram.id, diagramData);
+  // Update the diagram PUML and save it to disk
+  await generateDiagramSourceFromFile(updatedDiagram, updatedDiagram.pumlPath);
 
   return {
     relationship,

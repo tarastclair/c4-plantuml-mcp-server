@@ -70,13 +70,8 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
         });
 
         try {
-          // Generate and save the diagram files (both PUML and PNG)
-          const pngData = await generateEmptyDiagram(diagram, pumlPath, pngPath);
-          
-          // Cache the diagram in the database
-          if (pngData) {
-            await db.cacheDiagram(diagram.id, pngData);
-          }
+          // Generate the diagram PUML and save it to disk
+          const pngData = await generateEmptyDiagram(diagram, pumlPath);
         } catch (diagramError) {
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
