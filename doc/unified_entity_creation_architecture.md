@@ -122,6 +122,7 @@ Based on the [C4-PlantUML documentation](https://github.com/plantuml-stdlib/C4-P
 - [ ] Implement boundaryEntityHelpers.ts
 - [ ] Update addEntityTool.ts to support all entity types
 - [ ] Validate that we can now create component diagrams
+- [ ] Test what happens when you create different levels from different chats
 - [ ] ...code diagrams
 
 
