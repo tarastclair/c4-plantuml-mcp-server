@@ -43,7 +43,7 @@ export const createContainerDiagramTool = (server: McpServer, db: DiagramDb): vo
     Response Fields:
     - message: String (User-friendly message about the update)
     - projectId: String (UUID of the project)
-    - entityIds: Object (Mappings of entity IDs by diagram)`,
+    - elementIds: Object (Mappings of element IDs by diagram)`,
     {
       projectId: z.string().describe("ID of the project to add this diagram to"),
       title: z.string().describe("Title for the new diagram"),

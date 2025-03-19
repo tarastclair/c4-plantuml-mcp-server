@@ -1,5 +1,5 @@
 /**
- * personEntityHelpers.ts
+ * personElementHelpers.ts
  * 
  * Helper functions for creating person entities in C4 diagrams
  * Supports standard and external person variants with optional styling parameters
@@ -9,7 +9,7 @@ import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../typ
 import { generateDiagramFromState } from "../../plantuml-utils.js";
 
 /**
- * Common parameters for person entity creation
+ * Common parameters for person element creation
  * These match the parameters available in C4-PlantUML's Person() and Person_Ext() macros
  */
 export interface PersonParams {
@@ -24,7 +24,7 @@ export interface PersonParams {
 }
 
 /**
- * Result from creating a person entity
+ * Result from creating a person element
  */
 export interface PersonResult {
   element: C4Element;
@@ -32,7 +32,7 @@ export interface PersonResult {
 }
 
 /**
- * Core function to handle all person entity creation
+ * Core function to handle all person element creation
  * Centralizes the common logic to avoid duplication and ensure consistency
  */
 async function createPersonCore(

@@ -1,5 +1,5 @@
 /**
- * systemEntityHelpers.ts
+ * systemElementHelpers.ts
  * 
  * Helper functions for creating system entities in C4 diagrams
  * Supports all system variants: standard, external, db, queue, and combinations
@@ -9,7 +9,7 @@ import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../typ
 import { generateDiagramFromState } from "../../plantuml-utils.js";
 
 /**
- * Common parameters for system entity creation
+ * Common parameters for system element creation
  * These match the parameters available in C4-PlantUML's System macros
  */
 export interface SystemParams {
@@ -25,15 +25,15 @@ export interface SystemParams {
 }
 
 /**
- * Result from creating a system entity
+ * Result from creating a system element
  */
-export interface EntityCreationResult {
+export interface ElementCreationResult {
   element: C4Element;
   diagram: C4Diagram;
 }
 
 /**
- * Core function to handle all system entity creation
+ * Core function to handle all system element creation
  * Centralizes the common logic to avoid duplication and ensure consistency
  */
 async function createSystemCore(
@@ -41,7 +41,7 @@ async function createSystemCore(
   variant: ElementVariant,
   additionalMetadata: Record<string, unknown> = {},
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   // Get the project and diagram
   const project = await db.getProject(params.projectId);
   if (!project) {
@@ -100,7 +100,7 @@ async function createSystemCore(
 export async function createStandardSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(params, 'standard', {}, db);
 }
 
@@ -111,7 +111,7 @@ export async function createStandardSystem(
 export async function createExternalSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(params, 'external', {}, db);
 }
 
@@ -122,7 +122,7 @@ export async function createExternalSystem(
 export async function createDatabaseSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(params, 'db', {}, db);
 }
 
@@ -133,7 +133,7 @@ export async function createDatabaseSystem(
 export async function createQueueSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(params, 'queue', {}, db);
 }
 
@@ -144,7 +144,7 @@ export async function createQueueSystem(
 export async function createExternalDatabaseSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(
     params, 
     'external', 
@@ -160,7 +160,7 @@ export async function createExternalDatabaseSystem(
 export async function createExternalQueueSystem(
   params: SystemParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createSystemCore(
     params, 
     'external', 

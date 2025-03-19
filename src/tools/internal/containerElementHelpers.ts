@@ -1,5 +1,5 @@
 /**
- * containerEntityHelpers.ts
+ * containerElementHelpers.ts
  * 
  * Helper functions for creating container entities in C4 diagrams
  * Supports all container variants: standard, external, db, queue, and combinations
@@ -9,7 +9,7 @@ import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../typ
 import { generateDiagramFromState } from "../../plantuml-utils.js";
 
 /**
- * Common parameters for container entity creation
+ * Common parameters for container element creation
  * These match the parameters available in C4-PlantUML's Container macros
  */
 export interface ContainerParams {
@@ -39,15 +39,15 @@ export interface ContainerBoundaryParams {
 }
 
 /**
- * Result from creating a container entity
+ * Result from creating a container element
  */
-export interface EntityCreationResult {
+export interface ElementCreationResult {
   element: C4Element;
   diagram: C4Diagram;
 }
 
 /**
- * Core function to handle all container entity creation
+ * Core function to handle all container element creation
  * Centralizes the common logic to avoid duplication and ensure consistency
  */
 async function createContainerCore(
@@ -55,7 +55,7 @@ async function createContainerCore(
   variant: ElementVariant,
   additionalMetadata: Record<string, unknown> = {},
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   // Get the project and diagram
   const project = await db.getProject(params.projectId);
   if (!project) {
@@ -114,7 +114,7 @@ async function createContainerCore(
 export async function createStandardContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(params, 'standard', {}, db);
 }
 
@@ -125,7 +125,7 @@ export async function createStandardContainer(
 export async function createExternalContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(params, 'external', {}, db);
 }
 
@@ -136,7 +136,7 @@ export async function createExternalContainer(
 export async function createDatabaseContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(params, 'db', {}, db);
 }
 
@@ -147,7 +147,7 @@ export async function createDatabaseContainer(
 export async function createQueueContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(params, 'queue', {}, db);
 }
 
@@ -158,7 +158,7 @@ export async function createQueueContainer(
 export async function createExternalDatabaseContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(
     params, 
     'external', 
@@ -174,7 +174,7 @@ export async function createExternalDatabaseContainer(
 export async function createExternalQueueContainer(
   params: ContainerParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   return createContainerCore(
     params, 
     'external', 
@@ -190,7 +190,7 @@ export async function createExternalQueueContainer(
 export async function createContainerBoundary(
   params: ContainerBoundaryParams,
   db: DiagramDb
-): Promise<EntityCreationResult> {
+): Promise<ElementCreationResult> {
   // Get the project and diagram
   const project = await db.getProject(params.projectId);
   if (!project) {

@@ -2,23 +2,23 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { C4Diagram, C4Element } from './types-and-interfaces.js';
 
 /**
- * Maps UUIDs to entity names for easy reference
- * The keys are UUIDs and the values are entity names
+ * Maps UUIDs to element names for easy reference
+ * The keys are UUIDs and the values are element names
  */
-export type EntityIDMapping = {
+export type ElementIDMapping = {
   [key: string]: string; // E.x. { "<UUID>": "PlantUML MCP Server"}
 }
 
 /**
- * Structure for a single diagram's entity mappings
+ * Structure for a single diagram's element mappings
  */
-export type DiagramEntityMapping = {
+export type DiagramElementMapping = {
   name: string;
   type: string;
   elements: {
-    [elementType: string]: EntityIDMapping;
+    [elementType: string]: ElementIDMapping;
   };
-  relationships: EntityIDMapping;
+  relationships: ElementIDMapping;
 }
 
 /**
@@ -28,9 +28,9 @@ export type DiagramEntityMapping = {
 export type ToolMetadata = {
   projectId: string; // ID of the current project
   diagramId?: string; // ID of the current active diagram
-  // Diagram entity mappings - organized by diagram
+  // Diagram element mappings - organized by diagram
   diagrams?: { 
-    [diagramId: string]: DiagramEntityMapping;
+    [diagramId: string]: DiagramElementMapping;
   }
 };
 
@@ -56,7 +56,7 @@ export const createToolResponse = (message: string, metadata: ToolMetadata): Cal
     fullMessage += `Active Diagram ID: ${metadata.diagramId}\n`;
   }
   
-  // Only add entity mappings section if diagrams are provided
+  // Only add element mappings section if diagrams are provided
   let entitiesText = '';
   
   if (metadata.diagrams && Object.keys(metadata.diagrams).length > 0) {
@@ -145,14 +145,14 @@ export const getErrorMessage = (error: unknown): string => {
 };
 
 /**
- * Builds entity ID mappings from a C4 diagram state
+ * Builds element ID mappings from a C4 diagram state
  * 
  * @param diagram The complete C4 diagram state
  * @returns Object containing mappings for the diagram's entities
  */
-export const buildEntityMappings = (diagram: C4Diagram): DiagramEntityMapping => {
+export const buildElementMappings = (diagram: C4Diagram): DiagramElementMapping => {
   // Initialize the result structure for a single diagram's entities
-  const result: DiagramEntityMapping = {
+  const result: DiagramElementMapping = {
     name: diagram.name || 'Untitled Diagram',
     type: diagram.diagramType || 'Context', // Default to Context if not specified
     elements: {},
@@ -195,7 +195,7 @@ export const buildEntityMappings = (diagram: C4Diagram): DiagramEntityMapping =>
  * @returns Complete tool metadata
  */
 export const createDiagramMetadata = (diagram: C4Diagram, projectId: string): ToolMetadata => {
-  const diagramMapping = buildEntityMappings(diagram);
+  const diagramMapping = buildElementMappings(diagram);
   
   return {
     projectId,

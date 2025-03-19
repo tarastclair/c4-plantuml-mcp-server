@@ -1,31 +1,31 @@
-// addEntityTool.ts
+// addElementTool.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
-import * as personHelpers from "./internal/personEntityHelpers.js";
-import * as systemHelpers from "./internal/systemEntityHelpers.js";
-import * as containerHelpers from "./internal/containerEntityHelpers.js";
+import * as personHelpers from "./internal/personElementHelpers.js";
+import * as systemHelpers from "./internal/systemElementHelpers.js";
+import * as containerHelpers from "./internal/containerElementHelpers.js";
 
-export const addEntityTool = (server: McpServer, db: DiagramDb): void => {
+export const addElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
-    "add-entity",
-    `Add an entity to a C4 diagram.
+    "add-element",
+    `Add an element to a C4 diagram.
     
-    This tool allows you to add any type of entity (person, system, container, component) 
-    to your C4 diagrams. The required parameters vary based on the entity type and variant.
+    This tool allows you to add any type of element (person, system, container, component) 
+    to your C4 diagrams. The required parameters vary based on the element type and variant.
     
     Required Input Fields:
     - projectId: String (UUID of the project)
     - diagramId: String (UUID of the diagram)
-    - entityType: String (Type of entity: "person", "system", "container", or "component")
-    - variant: String (Variant of the entity: "standard", "external", "db", "queue", or "boundary")
-    - name: String (Name of the entity)
-    - description: String (Description of the entity)
+    - elementType: String (Type of element: "person", "system", "container", or "component")
+    - variant: String (Variant of the element: "standard", "external", "db", "queue", or "boundary")
+    - name: String (Name of the element)
+    - description: String (Description of the element)
     
     Conditional Input Fields:
     - technology: String (Required for container and component entities)
-    - sprite: String (Optional icon for the entity)
+    - sprite: String (Optional icon for the element)
     - tags: String (Optional styling tags)
     - link: String (Optional URL link)
     - type: String (Optional type specifier)
@@ -33,31 +33,31 @@ export const addEntityTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - projectId: String (UUID of the project)
-    - entityIds: Object (Mappings of entity IDs)`,
+    - elementIds: Object (Mappings of element IDs)`,
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),
-      entityType: z.enum(["person", "system", "container", "component"]).describe("Type of entity to add"),
-      variant: z.enum(["standard", "external", "db", "queue", "boundary"]).describe("Variant of the entity"),
-      name: z.string().describe("Name of the entity"),
-      description: z.string().describe("Description of the entity"),
+      elementType: z.enum(["person", "system", "container", "component"]).describe("Type of element to add"),
+      variant: z.enum(["standard", "external", "db", "queue", "boundary"]).describe("Variant of the element"),
+      name: z.string().describe("Name of the element"),
+      description: z.string().describe("Description of the element"),
       technology: z.string().optional().describe("Technology used (required for container and component entities)"),
-      sprite: z.string().optional().describe("Optional icon for the entity"),
+      sprite: z.string().optional().describe("Optional icon for the element"),
       tags: z.string().optional().describe("Optional styling tags"),
       link: z.string().optional().describe("Optional URL link"),
       type: z.string().optional().describe("Optional type specifier")
     },
     async (params, extra) => {
       // Validate technology field for container and component entities
-      if (["container", "component"].includes(params.entityType) && !params.technology) {
+      if (["container", "component"].includes(params.elementType) && !params.technology) {
         return createErrorResponse("Technology is required for container and component entities");
       }
 
       try {
         let result;
 
-        // Route to the appropriate helper based on entity type and variant
-        switch (params.entityType) {
+        // Route to the appropriate helper based on element type and variant
+        switch (params.elementType) {
             case "person":
                 // Create person-specific params
                 const personParams = {
@@ -149,19 +149,19 @@ export const addEntityTool = (server: McpServer, db: DiagramDb): void => {
         }
 
         if (!result) {
-          return createErrorResponse(`Unsupported entity type and variant combination: ${params.entityType}/${params.variant}`);
+          return createErrorResponse(`Unsupported element type and variant combination: ${params.elementType}/${params.variant}`);
         }
 
-        // Create a formatted message based on the entity type and variant
+        // Create a formatted message based on the element type and variant
         const variantText = params.variant === 'standard' ? '' : ` ${params.variant}`;
-        const message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.entityType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+        const message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.elementType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
 
         // Build complete metadata
         const metadata = createDiagramMetadata(result.diagram, params.projectId);
 
         return createToolResponse(message, metadata);
       } catch (error) {
-        return createErrorResponse(`Error adding ${params.entityType}: ${getErrorMessage(error)}`);
+        return createErrorResponse(`Error adding ${params.elementType}: ${getErrorMessage(error)}`);
       }
     }
   );

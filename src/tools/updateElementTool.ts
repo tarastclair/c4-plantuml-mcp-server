@@ -30,7 +30,7 @@ export const updateElementTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - projectId: String (UUID of the project)
-    - entityIds: Object (Mappings of entity UUIDs to their names)`,
+    - elementIds: Object (Mappings of element UUIDs to their names)`,
     {
       projectId: z.string().describe("UUID of the project from create-c4-project"),
       diagramId: z.string().describe("UUID of the diagram from create-context-diagram"),

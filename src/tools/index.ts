@@ -7,7 +7,7 @@ import { DiagramDb } from '../db.js';
 import { updateElementTool } from "./updateElementTool.js";
 import { updateRelationshipTool } from "./updateRelationshipTool.js";
 import { createContextDiagramTool } from "./createContextDiagramTool.js";
-import { addEntityTool } from "./addEntityTool.js";
+import { addElementTool } from "./addElementTool.js";
 import { addRelationshipTool } from "./addRelationshipTool.js";
 import { createC4ProjectTool } from "./createC4ProjectTool.js";
 
@@ -21,7 +21,7 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   updateElementTool(server, db);
   updateRelationshipTool(server, db);
   createContextDiagramTool(server, db);
-  addEntityTool(server, db);
+  addElementTool(server, db);
   addRelationshipTool(server, db);
   createC4ProjectTool(server, db);
 };
