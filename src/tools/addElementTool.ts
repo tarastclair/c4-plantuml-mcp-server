@@ -33,7 +33,11 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     Response Fields:
     - message: String (User-friendly message about the update)
     - projectId: String (UUID of the project)
-    - elementIds: Object (Mappings of element IDs)`,
+    - elementIds: Object (Mappings of element IDs)
+    
+    You can continue to use the add-element and add-relationship tools to design your diagram,
+    and when you're finished, you must call the generate-diagram-image tool to create
+    a png image of the completed diagram.`,
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),

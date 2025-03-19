@@ -43,7 +43,11 @@ export const createContainerDiagramTool = (server: McpServer, db: DiagramDb): vo
     Response Fields:
     - message: String (User-friendly message about the update)
     - projectId: String (UUID of the project)
-    - elementIds: Object (Mappings of element IDs by diagram)`,
+    - elementIds: Object (Mappings of element IDs by diagram)
+    
+    You can use the add-element and add-relationship tools to design your diagram,
+    and when you're finished, you must call the generate-diagram-image tool to create
+    a png image of the completed diagram.`,
     {
       projectId: z.string().describe("ID of the project to add this diagram to"),
       title: z.string().describe("Title for the new diagram"),

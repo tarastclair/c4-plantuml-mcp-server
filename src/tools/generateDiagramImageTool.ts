@@ -23,7 +23,8 @@ export const generateDiagramImageTool = (server: McpServer, db: DiagramDb): void
     
     All other diagram modification tools (add-element, add-relationship, etc.) only update
     the PlantUML source file but do not generate the image. You must explicitly call this
-    tool when you want to see the visual representation of your diagram.
+    tool when you have finished designing your diagram to create its visual representation
+    for the user.
     
     Required Input Fields:
     - projectId: String (UUID from create-c4-project)
