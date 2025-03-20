@@ -12,6 +12,7 @@ import { addRelationshipTool } from "./addRelationshipTool.js";
 import { createC4ProjectTool } from "./createC4ProjectTool.js";
 import { deleteElementTool } from "./deleteElementTool.js";
 import { createContainerDiagramTool } from "./createContainerDiagramTool.js";
+import { createComponentDiagramTool } from "./createComponentDiagramTool.js";
 import { generateDiagramImageTool } from "./generateDiagramImageTool.js";
 
 /**
@@ -29,5 +30,6 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   createC4ProjectTool(server, db);
   deleteElementTool(server, db);
   createContainerDiagramTool(server, db);
+  createComponentDiagramTool(server, db);
   generateDiagramImageTool(server, db);
 };

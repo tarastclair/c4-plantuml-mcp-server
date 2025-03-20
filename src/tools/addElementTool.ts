@@ -6,6 +6,7 @@ import { createToolResponse, createErrorResponse, getErrorMessage, createDiagram
 import * as personHelpers from "./internal/personElementHelpers.js";
 import * as systemHelpers from "./internal/systemElementHelpers.js";
 import * as containerHelpers from "./internal/containerElementHelpers.js";
+import * as componentHelpers from "./internal/componentEntityHelpers.js";
 import * as boundaryHelpers from "./internal/boundaryEntityHelpers.js";
 
 export const addElementTool = (server: McpServer, db: DiagramDb): void => {
@@ -140,6 +141,40 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                     result = await containerHelpers.createExternalContainer(containerParams, db);
                 } else {
                     return createErrorResponse(`Unsupported container variant: ${params.variant}`);
+                }
+                break;
+            
+            case "component":
+                // Ensure technology is provided for components
+                if (!params.technology) {
+                    return createErrorResponse("Technology is required for component entities");
+                }
+                
+                // Create component-specific params object
+                const componentParams = {
+                    projectId: params.projectId,
+                    diagramId: params.diagramId,
+                    name: params.name,
+                    description: params.description,
+                    technology: params.technology,
+                    boundaryId: params.boundaryId,
+                    sprite: params.sprite,
+                    tags: params.tags,
+                    link: params.link,
+                    baseShape: params.type // Use type as baseShape if available
+                };
+                
+                // Route to specific component helper based on variant
+                if (params.variant === "standard") {
+                    result = await componentHelpers.createStandardComponent(componentParams, db);
+                } else if (params.variant === "db") {
+                    result = await componentHelpers.createDatabaseComponent(componentParams, db);
+                } else if (params.variant === "queue") {
+                    result = await componentHelpers.createQueueComponent(componentParams, db);
+                } else if (params.variant === "external") {
+                    result = await componentHelpers.createExternalComponent(componentParams, db);
+                } else {
+                    return createErrorResponse(`Unsupported component variant: ${params.variant}`);
                 }
                 break;
             

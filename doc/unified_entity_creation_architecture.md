@@ -119,9 +119,9 @@ Based on the [C4-PlantUML documentation](https://github.com/plantuml-stdlib/C4-P
 - [x] Implement delete DB functions
 - [x] Validate that we can now create container diagrams
 - [x] Implement boundaryEntityHelpers.ts
-- [ ] Implement componentEntityHelpers.ts
-- [ ] Update addEntityTool.ts to support all entity types
-- [ ] Validate that we can now create component diagrams
+- [x] Implement componentEntityHelpers.ts
+- [x] Update addEntityTool.ts to support all entity types
+- [x] Validate that we can now create component diagrams
 - [ ] Test what happens when you create different levels from different chats
 - [ ] What happens if you don't have filesystem?
 - [ ] ...code diagrams
