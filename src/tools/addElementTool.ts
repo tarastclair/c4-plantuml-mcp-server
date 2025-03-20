@@ -6,20 +6,21 @@ import { createToolResponse, createErrorResponse, getErrorMessage, createDiagram
 import * as personHelpers from "./internal/personElementHelpers.js";
 import * as systemHelpers from "./internal/systemElementHelpers.js";
 import * as containerHelpers from "./internal/containerElementHelpers.js";
+import * as boundaryHelpers from "./internal/boundaryEntityHelpers.js";
 
 export const addElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "add-element",
     `Add an element to a C4 diagram.
     
-    This tool allows you to add any type of element (person, system, container, component) 
+    This tool allows you to add any type of element (person, system, container, component, boundary) 
     to your C4 diagrams. The required parameters vary based on the element type and variant.
     
     Required Input Fields:
     - projectId: String (UUID of the project)
     - diagramId: String (UUID of the diagram)
-    - elementType: String (Type of element: "person", "system", "container", or "component")
-    - variant: String (Variant of the element: "standard", "external", "db", "queue", or "boundary")
+    - elementType: String (Type of element: "person", "system", "container", "component", "boundary")
+    - variant: String (Variant of the element: "standard", "external", "db", "queue",  "system", "container")
     - name: String (Name of the element)
     - description: String (Description of the element)
     
@@ -29,7 +30,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     - sprite: String (Optional icon for the element)
     - tags: String (Optional styling tags)
     - link: String (Optional URL link)
-    - type: String (Optional type specifier)
+    - type: String (Optional type specifier, for boundaries can be "system", or "container")
     
     Response Fields:
     - message: String (User-friendly message about the update)
@@ -42,8 +43,8 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),
-      elementType: z.enum(["person", "system", "container", "component"]).describe("Type of element to add"),
-      variant: z.enum(["standard", "external", "db", "queue", "boundary"]).describe("Variant of the element"),
+      elementType: z.enum(["person", "system", "container", "component", "boundary"]).describe("Type of element to add"),
+      variant: z.enum(["standard", "external", "db", "queue", "system", "container", "generic"]).describe("Variant of the element"),
       name: z.string().describe("Name of the element"),
       description: z.string().describe("Description of the element"),
       technology: z.string().optional().describe("Technology used (required for container and component entities)"),
@@ -51,11 +52,12 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
       sprite: z.string().optional().describe("Optional icon for the element"),
       tags: z.string().optional().describe("Optional styling tags"),
       link: z.string().optional().describe("Optional URL link"),
-      type: z.string().optional().describe("Optional type specifier")
+      type: z.string().optional().describe("Optional type specifier, for boundaries can be 'system', or 'container'")
     },
     async (params, extra) => {
       // Validate technology field for container and component entities
-      if (["container", "component"].includes(params.elementType) && !params.technology) {
+      if (["container", "component"].includes(params.elementType) && 
+          !params.technology) {
         return createErrorResponse("Technology is required for container and component entities");
       }
 
@@ -81,6 +83,8 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                     result = await personHelpers.createStandardPerson(personParams, db);
                 } else if (params.variant === "external") {
                     result = await personHelpers.createExternalPerson(personParams, db);
+                } else {
+                    return createErrorResponse(`Unsupported person variant: ${params.variant}`);
                 }
                 break;
                 
@@ -105,53 +109,72 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                     result = await systemHelpers.createDatabaseSystem(systemParams, db);
                 } else if (params.variant === "queue") {
                     result = await systemHelpers.createQueueSystem(systemParams, db);
+                } else {
+                    return createErrorResponse(`Unsupported system variant: ${params.variant}`);
                 }
-                // Add other system variants as needed
                 break;
             
             case "container":
-                if (params.variant === "standard" || params.variant === "db" || params.variant === "queue" || params.variant === "external") {
-                    // Create container-specific params object with only the properties needed by container helpers
-                    const containerParams = {
+                // Create container-specific params object
+                const containerParams = {
                     projectId: params.projectId,
                     diagramId: params.diagramId,
                     name: params.name,
                     description: params.description,
                     technology: params.technology || "",  // Ensure we have a technology value
+                    boundaryId: params.boundaryId,
                     sprite: params.sprite,
                     tags: params.tags,
                     link: params.link,
                     baseShape: params.type // Use type as baseShape if available
-                    };
-                    
-                    // Route to specific container helper based on variant
-                    if (params.variant === "standard") {
+                };
+                
+                // Route to specific container helper based on variant
+                if (params.variant === "standard") {
                     result = await containerHelpers.createStandardContainer(containerParams, db);
-                    } else if (params.variant === "db") {
+                } else if (params.variant === "db") {
                     result = await containerHelpers.createDatabaseContainer(containerParams, db);
-                    } else if (params.variant === "queue") {
+                } else if (params.variant === "queue") {
                     result = await containerHelpers.createQueueContainer(containerParams, db);
-                    } else if (params.variant === "external") {
+                } else if (params.variant === "external") {
                     result = await containerHelpers.createExternalContainer(containerParams, db);
-                    }
-                } else if (params.variant === "boundary") {
-                    // Boundary has a different parameter structure - create boundary-specific params
-                    const boundaryParams = {
+                } else {
+                    return createErrorResponse(`Unsupported container variant: ${params.variant}`);
+                }
+                break;
+            
+            case "boundary":
+                // Create boundary-specific params
+                const boundaryParams = {
                     projectId: params.projectId,
                     diagramId: params.diagramId,
                     name: params.name,
                     description: params.description,
+                    sprite: params.sprite,
                     tags: params.tags,
-                    link: params.link
-                    };
-                    
-                    result = await containerHelpers.createContainerBoundary(boundaryParams, db);
+                    link: params.link,
+                    type: params.type
+                };
+                
+                // Route to specific boundary helper based on variant
+                if (params.variant === "system") {
+                    result = await boundaryHelpers.createSystemBoundary(boundaryParams, db);
+                } else if (params.variant === "container") {
+                    result = await boundaryHelpers.createContainerBoundary(boundaryParams, db);
+                } else if (params.variant === "generic") {
+                    result = await boundaryHelpers.createGenericBoundary(boundaryParams, db);
+                } else {
+                    return createErrorResponse(`Unsupported boundary variant: ${params.variant}`);
                 }
                 break;
-            
-          case "component":
-            // Similar routing for component variants
-            break;
+                
+            case "component":
+                // Component support will be added in a future update
+                return createErrorResponse("Component support is not yet implemented");
+                break;
+                
+            default:
+                return createErrorResponse(`Unsupported element type: ${params.elementType}`);
         }
 
         if (!result) {
@@ -159,8 +182,16 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
         }
 
         // Create a formatted message based on the element type and variant
-        const variantText = params.variant === 'standard' ? '' : ` ${params.variant}`;
-        const message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.elementType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+        let message;
+        
+        if (params.elementType === "boundary") {
+            // For boundaries, create a more appropriate message
+            message = `Added ${params.variant} boundary "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+        } else {
+            // For regular elements
+            const variantText = params.variant === 'standard' ? '' : ` ${params.variant}`;
+            message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.elementType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+        }
 
         // Build complete metadata
         const metadata = createDiagramMetadata(result.diagram, params.projectId);

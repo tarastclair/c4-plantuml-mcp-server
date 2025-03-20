@@ -39,7 +39,7 @@ export type ElementVariant =
 export interface ElementDescriptor {
     baseType: BaseElementType;
     variant: ElementVariant;
-    boundaryType?: 'enterprise' | 'system' | 'container'; // Only for boundary variant
+    boundaryType?: 'system' | 'container'; // Only for boundary variant
 }
 
 // C4 diagram element with composite type descriptor

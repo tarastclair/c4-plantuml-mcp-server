@@ -9,7 +9,7 @@ Here is an example of a context diagram generated exclusively by Claude for this
 
 ## Feature Roadmap
 - [x] Support context diagram creation
-- [ ] Support system boundaries
+- [x] Support boundaries (nested boundaries not included)
 - [x] Support bi-directional relationships
 - [x] Support extended system types (Db, Queue)
 - [ ] Support icons and sprites

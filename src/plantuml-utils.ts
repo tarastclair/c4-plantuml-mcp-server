@@ -151,9 +151,7 @@ export function getElementMacro(element: {
   
   // Handle boundary elements
   if (variant === 'boundary') {
-    if (boundaryType === 'enterprise') {
-      return 'Enterprise_Boundary';
-    } else if (boundaryType === 'system') {
+    if (boundaryType === 'system') {
       return 'System_Boundary';
     } else if (boundaryType === 'container') {
       return 'Container_Boundary';
