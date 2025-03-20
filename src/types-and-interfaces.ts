@@ -15,7 +15,8 @@ export enum DiagramType {
     CONTEXT = 'context',
     CONTAINER = 'container',
     COMPONENT = 'component',
-    CODE = 'code'
+    CODE = 'code',
+    INTERFACE = 'interface'
 }
 
 // Base element types that can appear in C4 diagrams
@@ -35,11 +36,25 @@ export type ElementVariant =
     | 'queue'     // Message queue
     | 'boundary'; // Boundary element
 
+export type InterfaceElementType =
+| 'interface'
+| 'type'
+| 'enum';
+
+export enum InterfaceRelationshipType {
+    IMPLEMENTS = 'implements',
+    EXTENDS = 'extends',
+    USES = 'uses',
+    REFERENCES = 'references',
+    CONTAINS = 'contains'
+}
+
 // Composite type descriptor for elements
 export interface ElementDescriptor {
     baseType: BaseElementType;
     variant: ElementVariant;
     boundaryType?: 'system' | 'container'; // Only for boundary variant
+    interfaceType?: InterfaceElementType; // Only for interface elements
 }
 
 // C4 diagram element with composite type descriptor

@@ -14,6 +14,7 @@ import { deleteElementTool } from "./deleteElementTool.js";
 import { createContainerDiagramTool } from "./createContainerDiagramTool.js";
 import { createComponentDiagramTool } from "./createComponentDiagramTool.js";
 import { generateDiagramImageTool } from "./generateDiagramImageTool.js";
+import { createInterfacesVisualizationTool } from "./createInterfacesVisualizationTool.js";
 
 /**
  * Register all tools with the MCP server
@@ -32,4 +33,5 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   createContainerDiagramTool(server, db);
   createComponentDiagramTool(server, db);
   generateDiagramImageTool(server, db);
+  createInterfacesVisualizationTool(server, db);
 };

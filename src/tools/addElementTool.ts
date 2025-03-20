@@ -8,6 +8,8 @@ import * as systemHelpers from "./internal/systemElementHelpers.js";
 import * as containerHelpers from "./internal/containerElementHelpers.js";
 import * as componentHelpers from "./internal/componentEntityHelpers.js";
 import * as boundaryHelpers from "./internal/boundaryEntityHelpers.js";
+import * as interfaceHelpers from "./internal/interfaceElementHelpers.js";
+import { DiagramType, InterfaceElementType } from "../types-and-interfaces.js";
 
 export const addElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
@@ -20,7 +22,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     Required Input Fields:
     - projectId: String (UUID of the project)
     - diagramId: String (UUID of the diagram)
-    - elementType: String (Type of element: "person", "system", "container", "component", "boundary")
+    - elementType: String (Type of element: "person", "system", "container", "component", "boundary", "interface", "type", "enum")
     - variant: String (Variant of the element: "standard", "external", "db", "queue",  "system", "container")
     - name: String (Name of the element)
     - description: String (Description of the element)
@@ -31,7 +33,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     - sprite: String (Optional icon for the element)
     - tags: String (Optional styling tags)
     - link: String (Optional URL link)
-    - type: String (Optional type specifier, for boundaries can be "system", or "container")
+    - type: String (Optional type specifier, for boundaries can be "system" or "container")
     
     Response Fields:
     - message: String (User-friendly message about the update)
@@ -44,7 +46,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),
-      elementType: z.enum(["person", "system", "container", "component", "boundary"]).describe("Type of element to add"),
+      elementType: z.enum(["person", "system", "container", "component", "boundary", "interface", "type", "enum"]).describe("Type of element to add"),
       variant: z.enum(["standard", "external", "db", "queue", "system", "container", "generic"]).describe("Variant of the element"),
       name: z.string().describe("Name of the element"),
       description: z.string().describe("Description of the element"),
@@ -56,6 +58,12 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
       type: z.string().optional().describe("Optional type specifier, for boundaries can be 'system', or 'container'")
     },
     async (params, extra) => {
+      // Check if diagram exists and belongs to the project
+      const diagram = await db.getDiagram(params.projectId, params.diagramId);
+      if (!diagram) {
+        throw new Error(`Diagram ${params.diagramId} not found. Please provide a valid diagram UUID.`);
+      }
+     
       // Validate technology field for container and component entities
       if (["container", "component"].includes(params.elementType) && 
           !params.technology) {
@@ -203,11 +211,28 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                 }
                 break;
                 
-            case "component":
-                // Component support will be added in a future update
-                return createErrorResponse("Component support is not yet implemented");
-                break;
+            case "interface":
+            case "type":
+            case "enum":
+                // Validate that we're using this in an interfaces diagram
+                if (diagram.diagramType !== DiagramType.INTERFACE) {
+                    return createErrorResponse("Interface elements can only be added to interfaces diagrams");
+                }
+
+                const interfaceType = params.elementType as InterfaceElementType;
                 
+                result = await interfaceHelpers.createInterfaceElement(
+                    db, 
+                    params.projectId, 
+                    params.diagramId,
+                    params.name,
+                    params.description,
+                    interfaceType, // The element type maps directly to the interface type
+                    params.technology,
+                    params.boundaryId
+                );
+                break;
+            
             default:
                 return createErrorResponse(`Unsupported element type: ${params.elementType}`);
         }

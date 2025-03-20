@@ -3,7 +3,7 @@
  * Generates C4 architectural diagrams in PNG format
  */
 import axios from 'axios';
-import { C4Diagram, DiagramType, C4Element, Project } from './types-and-interfaces.js';
+import { C4Diagram, DiagramType, C4Element, Project, InterfaceElementType, InterfaceRelationshipType } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePumlFile, savePngFile } from './filesystem-utils.js';
 import { DiagramDb } from './db.js';
@@ -25,6 +25,9 @@ export function getPlantUMLImport(diagramType: DiagramType): string {
       return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
     case DiagramType.CODE:
       // For code diagrams, we still use the component library
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
+    case DiagramType.INTERFACE:
+      // For interfaces diagrams, we use Component as base and add custom definitions
       return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
     default:
       // Default to context diagram
@@ -146,9 +149,9 @@ export const generateAndSaveDiagramImage = async (
  * @returns PlantUML macro name
  */
 export function getElementMacro(element: {
-  descriptor: { baseType: string; variant?: string; boundaryType?: string }
+  descriptor: { baseType: string; variant?: string; boundaryType?: string, interfaceType?: string }
 }): string {
-  const { baseType, variant, boundaryType } = element.descriptor;
+  const { baseType, variant, boundaryType, interfaceType  } = element.descriptor;
   
   // Handle boundary elements
   if (variant === 'boundary') {
@@ -159,6 +162,10 @@ export function getElementMacro(element: {
     } else {
       return 'Boundary'; // Default boundary
     }
+  }
+
+  if (interfaceType) {
+    return 'Component'; // We use Component for all interface elements, with tags for styling
   }
   
   // Start with the base element type (capitalized)
@@ -177,6 +184,28 @@ export function getElementMacro(element: {
   }
   
   return macro;
+}
+
+/**
+ * Gets the tag for an interface diagram element type
+ * Used to apply the correct styling in the PlantUML diagram
+ * 
+ * @param interfaceType Type of interface element
+ * @returns PlantUML $tags parameter value
+ */
+export function getInterfaceElementTag(interfaceType: InterfaceElementType): string {
+  return interfaceType; // We use the element type directly as the tag
+}
+
+/**
+ * Gets the relationship tag for an interface relationship type
+ * Used to apply the correct styling in the PlantUML diagram
+ * 
+ * @param relType Type of relationship in interface diagram
+ * @returns PlantUML $tags parameter value
+ */
+export function getInterfaceRelationshipTag(relType: InterfaceRelationshipType): string {
+  return relType; // Use the relationship type directly as the tag
 }
 
 /**
@@ -208,20 +237,65 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   lines.push(`This diagram is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
   lines.push('end note');
   lines.push('');
+
+  // Special setup for interfaces diagrams
+  if (diagram.diagramType === DiagramType.INTERFACE) {
+    lines.push(getInterfaceDiagramSetup());
+  }
   
-  // Process elements hierarchically
-  const elementLines = processElements(diagram.elements);
-  lines.push(...elementLines);
+  // Process elements with the appropriate method based on diagram type
+  if (diagram.diagramType === DiagramType.INTERFACE) {
+    const elementLines = processInterfaceDiagramElements(diagram.elements);
+    lines.push(...elementLines);
+  } else {
+    const elementLines = processElements(diagram.elements);
+    lines.push(...elementLines);
+  }
   lines.push('');
   
-  // Add relationships
-  addRelationships(diagram, lines);
+  // Add relationships with the appropriate method based on diagram type
+  if (diagram.diagramType === DiagramType.INTERFACE) {
+    addInterfaceDiagramRelationships(diagram, lines);
+  } else {
+    addRelationships(diagram, lines);
+  }
   
   // Footer
   lines.push('@enduml');
   
   return lines.join('\n');
 };
+
+/**
+ * Returns the setup section for interfaces diagrams
+ * Defines custom styling tags for interfaces, types, and enums
+ * 
+ * @returns PlantUML setup code as string
+ */
+export function getInterfaceDiagramSetup(): string {
+  const lines: string[] = [];
+  
+  // Hide stereotypes for cleaner diagram
+  lines.push('HIDE_STEREOTYPE()');
+  lines.push('');
+  
+  // Add custom styling for interface elements
+  lines.push('\'Type system tags with C4 blue gradient colors');
+  lines.push('AddElementTag("interface", $bgColor="#18437D", $fontColor="#ffffff", $borderColor="#0b2b52")');
+  lines.push('AddElementTag("type", $bgColor="#2A69C0", $fontColor="#ffffff", $borderColor="#1d4b8c")');
+  lines.push('AddElementTag("enum", $bgColor="#8CBBF2", $fontColor="#000000", $borderColor="#5c98d9")');
+  lines.push('');
+  
+  // Add relationship styling
+  lines.push('\'Simple relationship style');
+  lines.push('AddRelTag("contains", $lineStyle = DashedLine())');
+  lines.push('AddRelTag("implements", $lineColor="#18437D")');
+  lines.push('AddRelTag("extends", $lineColor="#2A69C0")');
+  lines.push('AddRelTag("references", $lineColor="#5c98d9")');
+  lines.push('');
+  
+  return lines.join('\n');
+}
 
 // Helper function to process elements hierarchically
 function processElements(elements: C4Element[]): string[] {
@@ -343,6 +417,102 @@ function processElements(elements: C4Element[]): string[] {
   return lines;
 }
 
+/**
+ * Process elements for an interfaces diagram
+ * Handles custom styling and organization for interface type diagrams
+ * 
+ * @param elements Elements to process
+ * @returns Array of PlantUML lines for elements
+ */
+function processInterfaceDiagramElements(elements: C4Element[]): string[] {
+  const lines: string[] = [];
+  const processedElementIds = new Set<string>();
+  
+  // Process non-boundary elements first
+  elements.forEach(element => {
+    if (element.parentId || element.descriptor.variant === 'boundary') {
+      return;
+    }
+    
+    const id = element.id.replace(/[^\w]/g, '_');
+    const name = element.name;
+    const description = element.description;
+    const macro = getElementMacro(element);
+    const techStr = element.technology ? `, "${element.technology}"` : ', ""';
+    
+    // For interface diagrams, we add tag based on interfaceType
+    let tagsStr = '';
+    if (element.descriptor.interfaceType) {
+      tagsStr = `, $tags="${element.descriptor.interfaceType}"`;
+    }
+    
+    // Add standalone elements
+    lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}"${tagsStr})`);
+    processedElementIds.add(element.id);
+  });
+  
+  // Process boundary elements and their children
+  elements.forEach(element => {
+    if (element.descriptor.variant !== 'boundary' || processedElementIds.has(element.id)) {
+      return;
+    }
+    
+    const id = element.id.replace(/[^\w]/g, '_');
+    const name = element.name;
+    const description = element.description;
+    const macro = getElementMacro(element);
+    
+    // Start boundary
+    lines.push(`${macro}(${id}, "${name}", "${description}") {`);
+    
+    // Process children
+    const children = elements.filter(e => e.parentId === element.id);
+    if (children.length > 0) {
+      children.forEach(child => {
+        const childId = child.id.replace(/[^\w]/g, '_');
+        const childName = child.name;
+        const childDesc = child.description;
+        const childMacro = getElementMacro(child);
+        const childTechStr = child.technology ? `, "${child.technology}"` : ', ""';
+        
+        // Add tag based on interfaceType
+        let tagsStr = '';
+        if (child.descriptor.interfaceType) {
+          tagsStr = `, $tags="${child.descriptor.interfaceType}"`;
+        }
+        
+        lines.push(`  ${childMacro}(${childId}, "${childName}"${childTechStr}, "${childDesc}"${tagsStr})`);
+        processedElementIds.add(child.id);
+      });
+    }
+    
+    // Close boundary
+    lines.push('}');
+    processedElementIds.add(element.id);
+  });
+  
+  // Process any remaining elements
+  elements.forEach(element => {
+    if (!processedElementIds.has(element.id)) {
+      const id = element.id.replace(/[^\w]/g, '_');
+      const name = element.name;
+      const description = element.description;
+      const macro = getElementMacro(element);
+      const techStr = element.technology ? `, "${element.technology}"` : ', ""';
+      
+      let tagsStr = '';
+      if (element.descriptor.interfaceType) {
+        tagsStr = `, $tags="${element.descriptor.interfaceType}"`;
+      }
+      
+      lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}"${tagsStr})`);
+      processedElementIds.add(element.id);
+    }
+  });
+  
+  return lines;
+}
+
 // Function to add relationships after all elements are defined
 function addRelationships(diagram: C4Diagram, lines: string[]): void {
   // Track processed relationships to prevent duplicates
@@ -365,6 +535,45 @@ function addRelationships(diagram: C4Diagram, lines: string[]): void {
       if (!processedRels.has(relKey)) {
         processedRels.add(relKey);
         lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr})`);
+      }
+    }
+  });
+}
+
+/**
+ * Add relationships for an interfaces diagram
+ * Handles relationship tagging and styling for interface type diagrams
+ * 
+ * @param diagram Diagram containing relationships
+ * @param lines Array of PlantUML lines to append to
+ */
+function addInterfaceDiagramRelationships(diagram: C4Diagram, lines: string[]): void {
+  // Track processed relationships to prevent duplicates
+  const processedRels = new Set<string>();
+
+  // Add relationships with appropriate tags
+  diagram.relationships.forEach(rel => {
+    const source = diagram.elements.find(e => e.id === rel.sourceId);
+    const target = diagram.elements.find(e => e.id === rel.targetId);
+    
+    if (source && target) {
+      const sourceId = source.id.replace(/[^\w]/g, '_');
+      const targetId = target.id.replace(/[^\w]/g, '_');
+      
+      // Create a unique key for this relationship
+      const relKey = `${sourceId}-${targetId}-${rel.description}`;
+      
+      // Only add if we haven't seen this relationship before
+      if (!processedRels.has(relKey)) {
+        processedRels.add(relKey);
+        
+        // Add tag if relationship type is in metadata
+        let tagsStr = '';
+        if (rel.metadata?.type && typeof rel.metadata.type === 'string') {
+          tagsStr = `, $tags="${rel.metadata.type}"`;
+        }
+        
+        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${tagsStr})`);
       }
     }
   });

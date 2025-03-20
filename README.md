@@ -7,17 +7,12 @@ The server uses [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) by
 Here is an example of a context diagram generated exclusively by Claude for this code base:
 ![Context diagram for this code base](./doc/img/plantuml-mcp-server-context-diagram.png)
 
-## Feature Roadmap
-- [x] Support context diagram creation
-- [x] Support boundaries (nested boundaries not included)
-- [x] Support bi-directional relationships
-- [x] Support extended system types (Db, Queue)
-- [ ] Support icons and sprites
-- [ ] Support container diagram creation
-- [ ] Support component diagram creation
-- [ ] Support code diagram creation
-- [ ] Support diagram styling: toggle legend on/off
-- [ ] Support diagram styling: layout-as-sketch for working diagrams
+## Supported Diagram Types
+
+- Context diagrams
+- Container diagrams
+- Component diagrams
+- Custom C4-styled type/interface/enum relationship diagrams, focused on their relationships with Containers and NOT including specific implementation details or properties (see example below)
 
 ## Prerequisites
 
@@ -73,3 +68,9 @@ npm run build
 - This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
 - If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
 - If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
+
+### TO DO
+- What happens if you don't have filesystem?
+- What happens if you create two component diagrams?
+- AI disclaimers
+- Add external containers/components to the interface diagram

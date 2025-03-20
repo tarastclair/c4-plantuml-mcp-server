@@ -1,0 +1,60 @@
+@startuml Types and Interfaces
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' Type system tags with C4 blue gradient colors
+AddElementTag("interface", $bgColor="#18437D", $fontColor="#ffffff", $borderColor="#0b2b52")
+AddElementTag("type", $bgColor="#2A69C0", $fontColor="#ffffff", $borderColor="#1d4b8c")
+AddElementTag("enum", $bgColor="#8CBBF2", $fontColor="#000000", $borderColor="#5c98d9")
+
+' Simple relationship style
+AddRelTag("contains", $lineStyle = DashedLine())
+
+' Hide the stereotype
+HIDE_STEREOTYPE()
+
+' Single boundary for all type definitions
+Boundary(type_system, "C4 Diagram Type System") {
+    ' Interfaces
+    Component(project, "Project", "Interface", $tags="interface")
+    Component(c4diagram, "C4Diagram", "Interface", $tags="interface")
+    Component(element_descriptor, "ElementDescriptor", "Interface", $tags="interface")
+    Component(c4element, "C4Element", "Interface", $tags="interface")
+    Component(c4relationship, "C4Relationship", "Interface", $tags="interface")
+    Component(db_schema, "DatabaseSchema", "Interface", $tags="interface")
+    Component(diagram_storage, "DiagramStorage", "Interface", $tags="interface")
+    
+    ' Type Aliases
+    Component(base_element_type, "BaseElementType", "Type", $tags="type")
+    Component(element_variant, "ElementVariant", "Type", $tags="type")
+    
+    ' Enums
+    Component(diagram_type, "DiagramType", "Enum", $tags="enum")
+}
+
+' External components (containers from our system)
+Component_Ext(api_server, "MCP Server", "TypeScript", "Handles MCP protocol communication")
+Component_Ext(database, "Diagram Storage", "JSON/File System", "Persists diagram data")
+Component_Ext(plantuml_generator, "PlantUML Generator", "TypeScript", "Generates diagram code and images")
+Component_Ext(diagram_manager, "Diagram Manager", "TypeScript", "Manages diagram creation and updates")
+
+' Relationships between types
+Rel(project, c4diagram, "contains[]", $tags="contains")
+Rel(c4diagram, diagram_type, "references")
+Rel(element_descriptor, base_element_type, "references")
+Rel(element_descriptor, element_variant, "references") 
+Rel(c4element, element_descriptor, "contains", $tags="contains")
+Rel(c4diagram, c4element, "contains[]", $tags="contains")
+Rel(c4diagram, c4relationship, "contains[]", $tags="contains")
+Rel(db_schema, project, "contains[]", $tags="contains")
+
+' Relationships between types and external components
+Rel(api_server, diagram_storage, "uses")
+Rel(diagram_manager, project, "manipulates")
+Rel(diagram_manager, c4diagram, "creates/updates")
+Rel(plantuml_generator, c4diagram, "renders")
+Rel(plantuml_generator, c4element, "processes")
+Rel(plantuml_generator, c4relationship, "processes")
+Rel(database, diagram_storage, "implements")
+
+@enduml
