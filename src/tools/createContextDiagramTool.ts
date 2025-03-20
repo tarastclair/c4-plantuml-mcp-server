@@ -17,8 +17,11 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
     A Context diagram (C4 Level 1) shows your system in its environment, focusing on people and systems rather than technologies or implementation details. Use this when you need a high-level overview that stakeholders can easily understand.
 
-    IMPORTANT: Before using this tool, you must first create a project using the create-c4-project tool.
-    You will need the project ID returned from that tool to create a context diagram.
+    IMPORTANT: Before using this tool, you will need either:
+    - the project ID returned from the create-c4-project tool
+    - to locate the project ID of an existing project; In this case, the projectId can be found in a note within the PUML source code for each diagram in the existing project
+
+    DO NOT create a new project if you have access to an existing project ID. Reusing the same project ID ensures proper relationships between different diagram levels.
 
     Benefits:
     - Automatic PlantUML code generation without needing to write syntax

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db.js";
-import { generateDiagramSourceFromFile } from "../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../plantuml-utils.js";
 import { C4Relationship } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
@@ -94,7 +94,8 @@ export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void =
 
         try {
           // Generate the diagram PUML and save it to disk
-          const pngData = await generateDiagramSourceFromFile(
+          const pngData = await generateDiagramSourceFromState(
+            db,
             updatedDiagram,
             updatedDiagram.pumlPath
           );

@@ -6,7 +6,7 @@
  */
 import { DiagramDb } from "../../db.js";
 import { C4Diagram, C4Relationship } from "../../types-and-interfaces.js";
-import { generateDiagramSourceFromFile } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
 
 /**
  * Direction options for relationships
@@ -95,7 +95,7 @@ async function createRelationshipCore(
   }
 
   // Update the diagram PUML and save it to disk
-  await generateDiagramSourceFromFile(updatedDiagram, updatedDiagram.pumlPath);
+  await generateDiagramSourceFromState(db, updatedDiagram, updatedDiagram.pumlPath);
 
   return {
     relationship,

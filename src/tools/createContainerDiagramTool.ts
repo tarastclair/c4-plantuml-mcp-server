@@ -22,9 +22,12 @@ export const createContainerDiagramTool = (server: McpServer, db: DiagramDb): vo
 
     A Container diagram (C4 Level 2) zooms into a software system to show the containers (applications, data stores, microservices, etc.) that make up that system. Use this to show how system responsibilities are distributed across containers and how these containers communicate.
 
-    IMPORTANT: Before using this tool, you must first create a project using the create-c4-project tool.
-    You will need the project ID returned from that tool to create a container diagram.
+    IMPORTANT: Before using this tool, you will need either:
+    - the project ID returned from the create-c4-project tool
+    - to locate the project ID of an existing project; In this case, the projectId can be found in a note within the PUML source code for each diagram in the existing project
 
+    DO NOT create a new project if you have access to an existing project ID. Reusing the same project ID ensures proper relationships between different diagram levels.
+    
     Benefits:
     - Shows the high-level technical building blocks and their interactions
     - Clarifies the architecture without going into implementation details

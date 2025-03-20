@@ -6,7 +6,7 @@
  */
 import { DiagramDb } from "../../db.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
-import { generateDiagramSourceFromFile } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
 
 /**
  * Common parameters for person element creation
@@ -76,7 +76,7 @@ async function createPersonCore(
   }
 
   // Generate the diagram PUML and save it to disk
-  await generateDiagramSourceFromFile(updatedDiagram, updatedDiagram.pumlPath);
+  await generateDiagramSourceFromState(db, updatedDiagram, updatedDiagram.pumlPath);
 
   return {
     element,

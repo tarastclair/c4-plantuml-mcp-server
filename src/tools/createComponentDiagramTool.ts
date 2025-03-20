@@ -22,9 +22,12 @@ export const createComponentDiagramTool = (server: McpServer, db: DiagramDb): vo
 
     A Component diagram (C4 Level 3) zooms into a specific container to show the components that make up that container. Use this to show how container responsibilities are distributed across components and how these components interact.
 
-    IMPORTANT: Before using this tool, you must first create a project using the create-c4-project tool.
-    You will need the project ID returned from that tool to create a component diagram.
+    IMPORTANT: Before using this tool, you will need either:
+    - the project ID returned from the create-c4-project tool
+    - to locate the project ID of an existing project; In this case, the projectId can be found in a note within the PUML source code for each diagram in the existing project
 
+    DO NOT create a new project if you have access to an existing project ID. Reusing the same project ID ensures proper relationships between different diagram levels.
+    
     Benefits:
     - Shows the internal architecture of a specific container
     - Clarifies how responsibilities are distributed across components

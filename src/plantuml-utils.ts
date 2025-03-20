@@ -3,9 +3,10 @@
  * Generates C4 architectural diagrams in PNG format
  */
 import axios from 'axios';
-import { C4Diagram, DiagramType, C4Element } from './types-and-interfaces.js';
+import { C4Diagram, DiagramType, C4Element, Project } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePumlFile, savePngFile } from './filesystem-utils.js';
+import { DiagramDb } from './db.js';
 
 /**
  * Gets the appropriate PlantUML include statement based on diagram type
@@ -186,7 +187,7 @@ export function getElementMacro(element: {
  * @param diagram Current diagram state with elements and relationships
  * @returns PlantUML source code as a string
  */
-export const generatePlantUMLSource = (diagram: C4Diagram): string => {
+export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): string => {
   const lines: string[] = [];
   
   // Header
@@ -202,6 +203,10 @@ export const generatePlantUMLSource = (diagram: C4Diagram): string => {
     lines.push(diagram.description);
     lines.push('end note');
   }
+  lines.push('');
+  lines.push('note as ExistingProject');
+  lines.push(`This diagram is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
+  lines.push('end note');
   lines.push('');
   
   // Process elements hierarchically
@@ -372,13 +377,20 @@ function addRelationships(diagram: C4Diagram, lines: string[]): void {
  * @param pumlPath Path where PUML file should be saved (null to skip saving)
  * @returns nothing
  */
-export const generateDiagramSourceFromFile = async (
+export const generateDiagramSourceFromState = async (
+  db: DiagramDb,
   diagram: C4Diagram,
   pumlPath?: string | null,
 ): Promise<void> => {
   try {
+    // Check if project exists
+    const project = await db.getProject(diagram.projectId);
+    if (!project) {
+      throw new Error(`Project ${diagram.projectId} not found. Please provide a valid project UUID.`);
+    }
+
     // Generate PlantUML source
-    const pumlContent = generatePlantUMLSource(diagram);
+    const pumlContent = generatePlantUMLSource(project, diagram);
     
     // Save PUML file if path provided
     if (pumlPath) {

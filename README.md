@@ -71,4 +71,5 @@ npm run build
 
 - You do not need any other MCP servers configured in order for this tool to be functional, but having `sequential-thinking` installed will greatly enhance your experience.
 - This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
-- If the AI does not automatically call the generate-diagram-image tool to create the png version of your diagram, you can prompt it to do so after it has finished designing your diagram.
+- If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
+- If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
