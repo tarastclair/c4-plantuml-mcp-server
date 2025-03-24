@@ -19,6 +19,10 @@ Here is an example of a context diagram generated exclusively by Claude for this
 - Node.js 18 or higher
 - npm 9 or higher
 - Internet connection (for PlantUML server access)
+- The official [Filesystem MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) installed and configured
+  - This C4 diagram MCP server will use the Filesystem MCP server to store the generated PUML source code and PNG images for your diagrams
+  - The Filesystem MCP server should be configured to allow the root directory where you would like any C4 diagram projects to be stored
+  - This dependency exists because the official Filesystem MCP server has an established security model for properly accessing your filesystem which we will leverage to ensure that the generated PUML source code and PNG images are stored in a secure manner
 
 ## Installation
 
@@ -43,18 +47,28 @@ npm run build
 
 2. Add the following configuration (adjust paths according to your environment):
 
-```json
-{
-  "mcpServers": {
-    "c4-diagrams": {
-      "command": "node",
-      "args": [
-        "ABSOLUTE/PATH/TO/plantuml-mcp-server/build/index.js"
-      ]
+    ```json
+    {
+      "mcpServers": {
+        "filesystem": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "@modelcontextprotocol/server-filesystem",
+            "/path/to/your/desired/root/directory"
+          ]
+        },
+        "c4-plantuml": {
+          "command": "npx",
+          "args": [
+            "c4-plantuml-server"
+          ]
+        },
+      }
     }
-  }
-}
-```
+    ```
+
+    As a tip, on Windows machines the path for the Filesystem MCP server configuration should be specified like `"C:\\my\\desired\\directory"`.
 
 3. Restart Claude Desktop using `CTRL+Q` or `CMD+Q`
 
@@ -64,13 +78,12 @@ npm run build
 
 ### Tips
 
-- You do not need any other MCP servers configured in order for this tool to be functional, but having `sequential-thinking` installed will greatly enhance your experience.
+- Having the official [Sequential Thinking MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking) installed will greatly enhance your experience by enabling the AI to think critically about your project to design the elements for your diagrams and their relationships.
 - This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
 - If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
 - If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
 
 ### TO DO
-- What happens if you don't have filesystem?
 - What happens if you create two component diagrams?
 - AI disclaimers
 - Add external containers/components to the interface diagram
