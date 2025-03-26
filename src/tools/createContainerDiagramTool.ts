@@ -5,7 +5,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DiagramDb } from "../db/db.js";
+import { DiagramDb } from "../db/index.js";
 import { generateEmptyDiagram } from "../plantuml-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 import { getDiagramFilePaths, findRelatedDiagrams } from "../filesystem-utils.js";

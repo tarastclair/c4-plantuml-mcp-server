@@ -3,7 +3,7 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { DiagramDb } from '../db/db.js';
+import { DiagramDb } from '../db/index.js';
 import { updateElementTool } from "./updateElementTool.js";
 import { updateRelationshipTool } from "./updateRelationshipTool.js";
 import { createContextDiagramTool } from "./createContextDiagramTool.js";

@@ -1,7 +1,7 @@
 // addElementTool.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DiagramDb } from "../db/db.js";
+import { DiagramDb } from "../db/index.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
 import * as personHelpers from "./internal/personElementHelpers.js";
 import * as systemHelpers from "./internal/systemElementHelpers.js";

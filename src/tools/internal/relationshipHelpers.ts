@@ -4,7 +4,7 @@
  * Helper functions for creating relationships between elements in C4 diagrams
  * Supports all relationship types/directions from C4-PlantUML
  */
-import { DiagramDb } from "../../db/db.js";
+import { DiagramDb } from "../../db/index.js";
 import { C4Diagram, C4Relationship } from "../../types-and-interfaces.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
 

@@ -2,7 +2,7 @@
  * Helper functions for working with interface diagram elements
  * Provides specialized handling for interface, type, and enum elements
  */
-import { DiagramDb } from "../../db/db.js";
+import { DiagramDb } from "../../db/index.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
 import { C4Element, InterfaceElementType, BaseElementType, ElementVariant, C4Diagram } from "../../types-and-interfaces.js";
 

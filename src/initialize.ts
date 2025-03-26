@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { DiagramDb } from './db/db.js';
+import { DiagramDb } from './db/index.js';
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 // Get the directory name of the current module
