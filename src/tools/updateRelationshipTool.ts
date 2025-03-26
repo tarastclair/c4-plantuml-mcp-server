@@ -12,7 +12,7 @@ import { createToolResponse, getErrorMessage, createErrorResponse, createDiagram
 export const updateRelationshipTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
     "update-relationship",
-    `Update an existing relationship in the C4 diagram
+    `Update an existing relationship in an existing C4 diagram. This tool should be used WHENEVER a user requests changes to existing relationships rather than creating new diagrams.
     
     Required Input Fields:
     - projectId: String (UUID from create-c4-project)

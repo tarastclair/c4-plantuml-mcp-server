@@ -242,15 +242,16 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
         }
 
         // Create a formatted message based on the element type and variant
+        const updateHelperMessage = "For any future changes to this element, use the update-element tool rather than creating a new diagram.";
         let message;
         
         if (params.elementType === "boundary") {
             // For boundaries, create a more appropriate message
-            message = `Added ${params.variant} boundary "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+            message = `Added ${params.variant} boundary "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\n${updateHelperMessage}`;
         } else {
             // For regular elements
             const variantText = params.variant === 'standard' ? '' : ` ${params.variant}`;
-            message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.elementType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\nWhat would you like to add next?`;
+            message = `Added${params.variant === 'external' ? ' external' : ''}${variantText} ${params.elementType} "${params.name}" with ID ${result.element.id} to diagram "${result.diagram.name}".\n\n${updateHelperMessage}`;
         }
 
         // Build complete metadata

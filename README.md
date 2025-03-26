@@ -72,18 +72,31 @@ npm run build
 
 3. Restart Claude Desktop using `CTRL+Q` or `CMD+Q`
 
-## Usage Example
+## Usage Examples
+
+In the examples below, a single Markdown document containing some high-level design infomation for this example application was included in Claude's Project Knowledge. You can include more detailed information, code files, or use the Filesystem MCP server to point Claude to a directory containing the files you would like it to use as context for your project.
+
+### Basic usage
+
+*Insert video here*
+
+### Creating additional diagrams
+
+*Insert video here*
+
+### Updating diagrams
 
 *Insert video here*
 
 ### Tips
 
-- Having the official [Sequential Thinking MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking) installed will greatly enhance your experience by enabling the AI to think critically about your project to design the elements for your diagrams and their relationships.
+- Having the official [Sequential Thinking MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking) installed will greatly enhance your experience if you have a complex project by enabling the AI to think critically about your project to design the elements for your diagrams and their relationships.
 - This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
 - If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
 - If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
 
 ### TO DO
-- What happens if you create two component diagrams?
 - AI disclaimers
 - Add external containers/components to the interface diagram
+- Support note elements
+- sequence diagrams

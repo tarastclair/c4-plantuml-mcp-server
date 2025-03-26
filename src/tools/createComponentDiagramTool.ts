@@ -19,6 +19,8 @@ export const createComponentDiagramTool = (server: McpServer, db: DiagramDb): vo
   server.tool(
     "create-component-diagram",
     `Create a new C4 Component diagram within an existing architecture project.
+    
+    If you need to make changes to an existing diagram, use the update-element and update-relationship tools instead.
 
     A Component diagram (C4 Level 3) zooms into a specific container to show the components that make up that container. Use this to show how container responsibilities are distributed across components and how these components interact.
 
@@ -101,7 +103,8 @@ export const createComponentDiagramTool = (server: McpServer, db: DiagramDb): vo
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
 
-        const message = `Created new Component diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}${containerMessage}\n\nLet's start by identifying the major components (classes, modules, services) that make up this container. What's the first component you'd like to add?`;
+        const updateHelperMessage = "For any future changes to this diagram, use the update-element or update-relationship tools rather than creating a new diagram.";
+        const message = `Created new Component diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}${containerMessage}\n\nLet's start by identifying the major components (classes, modules, services) that make up this container.\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
         const metadata = createDiagramMetadata(diagram, projectId);

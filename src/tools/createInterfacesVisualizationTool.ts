@@ -16,6 +16,8 @@ export const createInterfacesVisualizationTool = (server: McpServer, db: Diagram
     "create-interfaces-visualization",
     `Create a new C4-styled interfaces visualization diagram within an existing architecture project.
 
+    If you need to make changes to an existing diagram, use the update-element and update-relationship tools instead.
+    
     An interfaces diagram is a specialized C4-styled visualization that shows your type system in a 
     comprehensible format, with clear styling for interfaces, types, enums, and the relationships 
     between them. It's ideal for documenting complex type systems and API contracts.
@@ -85,7 +87,8 @@ export const createInterfacesVisualizationTool = (server: McpServer, db: Diagram
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
 
-        const message = `Created new Interfaces diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core interfaces, types, and enums. What type system elements would you like to visualize?`;
+        const updateHelperMessage = "For any future changes to this diagram, use the update-element or update-relationship tools rather than creating a new diagram.";
+        const message = `Created new Interfaces diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core interfaces, types, and enums.\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
         const metadata = createDiagramMetadata(diagram, projectId);

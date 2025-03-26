@@ -154,7 +154,8 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
           directionInfo = ` (${direction})`;
         }
         
-        const message = `Added relationship "${description}"${directionInfo} from "${sourceName}" to "${targetName}". Are there any other relationships to define?`;
+        const updateHelperMessage = "For any future changes to this element, use the update-element tool rather than creating a new diagram.";
+        const message = `Added relationship "${description}"${directionInfo} from "${sourceName}" to "${targetName}".\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
         const metadata = createDiagramMetadata(updatedDiagram, projectId);

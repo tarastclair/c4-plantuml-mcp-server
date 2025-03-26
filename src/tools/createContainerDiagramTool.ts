@@ -20,6 +20,8 @@ export const createContainerDiagramTool = (server: McpServer, db: DiagramDb): vo
     "create-container-diagram",
     `Create a new C4 Container diagram within an existing architecture project.
 
+    If you need to make changes to an existing diagram, use the update-element and update-relationship tools instead.
+
     A Container diagram (C4 Level 2) zooms into a software system to show the containers (applications, data stores, microservices, etc.) that make up that system. Use this to show how system responsibilities are distributed across containers and how these containers communicate.
 
     IMPORTANT: Before using this tool, you will need either:
@@ -101,7 +103,8 @@ export const createContainerDiagramTool = (server: McpServer, db: DiagramDb): vo
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
 
-        const message = `Created new Container diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}${contextMessage}\n\nLet's start by identifying the major containers (applications, data stores, services) that make up this system. What's the first container you'd like to add?`;
+        const updateHelperMessage = "For any future changes to this diagram, use the update-element or update-relationship tools rather than creating a new diagram.";
+        const message = `Created new Container diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}${contextMessage}\n\nLet's start by identifying the major containers (applications, data stores, services) that make up this system.\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
         const metadata = createDiagramMetadata(diagram, projectId);

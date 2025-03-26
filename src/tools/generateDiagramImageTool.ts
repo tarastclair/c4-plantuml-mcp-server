@@ -70,7 +70,7 @@ export const generateDiagramImageTool = (server: McpServer, db: DiagramDb): void
         try {
           await generateAndSaveDiagramImage(pumlContent, diagram.pngPath);
           
-          const message = `Successfully generated PNG image for diagram "${diagram.name}". The image has been saved to ${diagram.pngPath}`;
+          const message = `Successfully generated PNG image for diagram "${diagram.name}". The image has been saved to ${diagram.pngPath}. For any future changes to this diagram, use the update-element or update-relationship tools rather than creating a new diagram.`;
 
           // Build complete metadata for the diagram
           const metadata = createDiagramMetadata(diagram, projectId);

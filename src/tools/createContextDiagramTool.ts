@@ -15,6 +15,8 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
     "create-context-diagram",
     `Create a new C4 Context diagram within an existing architecture project.
 
+    If you need to make changes to an existing diagram, use the update-element and update-relationship tools instead.
+    
     A Context diagram (C4 Level 1) shows your system in its environment, focusing on people and systems rather than technologies or implementation details. Use this when you need a high-level overview that stakeholders can easily understand.
 
     IMPORTANT: Before using this tool, you will need either:
@@ -78,12 +80,13 @@ export const createContextDiagramTool = (server: McpServer, db: DiagramDb): void
 
         try {
           // Generate the diagram PUML and save it to disk
-          const pngData = await generateEmptyDiagram(diagram, pumlPath);
+          await generateEmptyDiagram(diagram, pumlPath);
         } catch (diagramError) {
           console.warn(`Failed to generate initial diagram: ${getErrorMessage(diagramError)}`);
         }
 
-        const message = `Created new Context diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system. What is it called, and what does it do?`;
+        const updateHelperMessage = "For any future changes to this diagram, use the update-element or update-relationship tools rather than creating a new diagram.";
+        const message = `Created new Context diagram "${title}" with ID ${diagram.id} in project "${project.name}".\n\nThe diagram has been saved to ${pumlPath}\n\nWe need to start by identifying the core system.\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
         const metadata = createDiagramMetadata(diagram, projectId);
