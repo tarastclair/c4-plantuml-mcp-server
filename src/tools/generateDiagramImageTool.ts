@@ -3,7 +3,7 @@ import { z } from "zod";
 import fs from "fs/promises";
 import axios from 'axios';
 import { DiagramDb } from "../db/index.js";
-import { generateAndSaveDiagramImage } from "../plantuml-utils.js";
+import { generateAndSaveDiagramImage } from "../plantuml-utils/index.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
 /**

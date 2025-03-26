@@ -7,7 +7,7 @@
  */
 import { DiagramDb } from "../../db/index.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
-import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";
 
 /**
  * Common parameters for boundary element creation

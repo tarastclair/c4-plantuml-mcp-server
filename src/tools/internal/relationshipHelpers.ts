@@ -6,7 +6,7 @@
  */
 import { DiagramDb } from "../../db/index.js";
 import { C4Diagram, C4Relationship } from "../../types-and-interfaces.js";
-import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";
 
 /**
  * Direction options for relationships
