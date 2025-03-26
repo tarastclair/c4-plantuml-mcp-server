@@ -11,6 +11,12 @@ import {
     Project,
     DiagramType
 } from '../types-and-interfaces.js';
+import {
+    createProjectImpl,
+    getProjectImpl,
+    updateProjectImpl,
+    listProjectsImpl
+} from './projects.js';
 
 /**
  * Implements storage for C4 diagrams and projects using lowdb
@@ -60,9 +66,7 @@ export class DiagramDb implements DiagramStorage {
      * @returns The created project
      */
     async createProject(project: Project): Promise<Project> {
-        this.db.data.projects.push(project);
-        await this.db.write();
-        return project;
+        return await createProjectImpl(this.db, project);
     }
 
     /**
@@ -71,8 +75,7 @@ export class DiagramDb implements DiagramStorage {
      * @returns The project or null if not found
      */
     async getProject(id: string): Promise<Project | null> {
-        const project = this.db.data.projects.find(p => p.id === id);
-        return project || null;
+        return await getProjectImpl(this.db, id);
     }
 
     /**
@@ -82,21 +85,7 @@ export class DiagramDb implements DiagramStorage {
      * @returns The updated project
      */
     async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-        const index = this.db.data.projects.findIndex(p => p.id === id);
-        if (index === -1) {
-            throw new Error(`Project not found: ${id}`);
-        }
-
-        const project = this.db.data.projects[index];
-        const updated = {
-            ...project,
-            ...updates,
-            updated: new Date().toISOString()
-        };
-
-        this.db.data.projects[index] = updated;
-        await this.db.write();
-        return updated;
+        return await updateProjectImpl(this.db, id, updates);
     }
 
     /**
@@ -104,7 +93,7 @@ export class DiagramDb implements DiagramStorage {
      * @returns Array of all projects
      */
     async listProjects(): Promise<Project[]> {
-        return this.db.data.projects;
+        return await listProjectsImpl(this.db);
     }
 
     /**
