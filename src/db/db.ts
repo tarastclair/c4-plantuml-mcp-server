@@ -17,6 +17,14 @@ import {
     updateProjectImpl,
     listProjectsImpl
 } from './projects.js';
+import {
+    findDiagramByNameImpl,
+    findDiagramsByFilePathImpl,
+    createDiagramImpl,
+    getDiagramImpl,
+    updateDiagramImpl,
+    listDiagramsImpl
+} from './diagrams.js';
 
 /**
  * Implements storage for C4 diagrams and projects using lowdb
@@ -110,19 +118,7 @@ export class DiagramDb implements DiagramStorage {
         name: string, 
         diagramType: DiagramType
     ): Promise<C4Diagram | null> {
-        // Get the project first
-        const project = await this.getProject(projectId);
-        if (!project) {
-            return null;
-        }
-        
-        // Find matching diagrams in the project
-        const diagrams = project.diagrams.filter(d => 
-            d.diagramType === diagramType && 
-            d.name.toLowerCase() === name.toLowerCase()
-        );
-        
-        return diagrams.length > 0 ? diagrams[0] : null;
+        return await findDiagramByNameImpl(this.db, projectId, name, diagramType);
     }
 
     /**
@@ -134,21 +130,7 @@ export class DiagramDb implements DiagramStorage {
      * @returns Array of matching diagrams with their project context
      */
     async findDiagramsByFilePath(pattern: string): Promise<C4Diagram[]> {
-        const matchingDiagrams: C4Diagram[] = [];
-        
-        // Iterate through all projects
-        for (const project of this.db.data.projects) {
-            // Filter diagrams in this project that match the pattern
-            const projectMatches = project.diagrams.filter(d => 
-                d.pumlPath?.includes(pattern) || 
-                d.pngPath?.includes(pattern)
-            );
-            
-            // Add matching diagrams to our results
-            matchingDiagrams.push(...projectMatches);
-        }
-        
-        return matchingDiagrams;
+        return await findDiagramsByFilePathImpl(this.db, pattern);
     }
 
     /**
@@ -169,35 +151,15 @@ export class DiagramDb implements DiagramStorage {
         pumlPath?: string,
         pngPath?: string
     ): Promise<C4Diagram> {
-        // Find the project
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-    
-        const now = new Date().toISOString();
-        const diagram: C4Diagram = {
-            id: uuidv4(),
-            projectId, // Include reference to parent project
-            name,
-            description,
-            diagramType,
-            pumlPath: pumlPath || '',
-            pngPath: pngPath || '',
-            elements: [],
-            relationships: [],
-            created: now,
-            updated: now,
-        };
-    
-        // Add the diagram to the project
-        project.diagrams.push(diagram);
-        project.updated = now;
-        
-        // Save the updated project
-        await this.db.write();
-        
-        return diagram;
+        return await createDiagramImpl(
+            this.db, 
+            projectId, 
+            name, 
+            description, 
+            diagramType, 
+            pumlPath, 
+            pngPath
+        );
     }
 
     /**
@@ -208,15 +170,7 @@ export class DiagramDb implements DiagramStorage {
     * @returns The diagram or null if not found
     */
     async getDiagram(projectId: string, diagramId: string): Promise<C4Diagram | null> {
-        // Find the project first
-        const project = await this.getProject(projectId);
-        if (!project) {
-            return null;
-        }
-        
-        // Find the diagram in the project
-        const diagram = project.diagrams.find(d => d.id === diagramId);
-        return diagram || null;
+        return await getDiagramImpl(this.db, projectId, diagramId);
     }
 
     /**
@@ -228,42 +182,7 @@ export class DiagramDb implements DiagramStorage {
     * @returns The updated diagram
     */
     async updateDiagram(projectId: string, diagramId: string, updates: Partial<C4Diagram>): Promise<C4Diagram> {
-        // Get the project
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-    
-        // Find the diagram in the project
-        const diagramIndex = project.diagrams.findIndex(d => d.id === diagramId);
-        if (diagramIndex === -1) {
-            throw new Error(`Diagram not found: ${diagramId}`);
-        }
-    
-        // Get the existing diagram
-        const diagram = project.diagrams[diagramIndex];
-        
-        // Create the updated diagram with timestamp
-        const updated = {
-            ...diagram,
-            ...updates,
-            updated: new Date().toISOString()
-        };
-    
-        // Ensure we don't accidentally change the projectId relationship
-        if (updates.projectId && updates.projectId !== projectId) {
-            // If trying to move to a different project, that should be
-            // handled by a dedicated "moveDiagram" method instead
-            throw new Error("Cannot change diagram's project through update. Use addDiagramToProject instead.");
-        }
-    
-        // Update the diagram in the project
-        project.diagrams[diagramIndex] = updated;
-        
-        // Save changes
-        await this.db.write();
-        
-        return updated;
+        return await updateDiagramImpl(this.db, projectId, diagramId, updates);
     }
 
     /**
@@ -273,14 +192,7 @@ export class DiagramDb implements DiagramStorage {
     * @returns Array of diagrams in the project
     */
     async listDiagrams(projectId: string): Promise<C4Diagram[]> {
-        // Get the project
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-        
-        // Return all diagrams in the project
-        return project.diagrams;
+        return await listDiagramsImpl(this.db, projectId);
     }
 
     /**
