@@ -6,7 +6,7 @@ import axios from 'axios';
 import { C4Diagram, DiagramType, C4Element, Project, InterfaceElementType, InterfaceRelationshipType } from './types-and-interfaces.js';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePumlFile, savePngFile } from './filesystem-utils.js';
-import { DiagramDb } from './db.js';
+import { DiagramDb } from './db/db.js';
 
 /**
  * Gets the appropriate PlantUML include statement based on diagram type

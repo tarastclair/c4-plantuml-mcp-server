@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DiagramDb } from "../db.js";
+import { DiagramDb } from "../db/db.js";
 import { 
   createStandardRelationship,
   createBidirectionalRelationship,

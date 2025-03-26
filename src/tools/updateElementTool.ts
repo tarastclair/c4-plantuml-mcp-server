@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DiagramDb } from "../db.js";
+import { DiagramDb } from "../db/db.js";
 import { generateDiagramSourceFromState } from "../plantuml-utils.js";
 import { BaseElementType, C4Element, ElementVariant } from "../types-and-interfaces.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";

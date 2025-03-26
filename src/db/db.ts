@@ -10,7 +10,7 @@ import {
     DiagramStorage,
     Project,
     DiagramType
-} from './types-and-interfaces.js';
+} from '../types-and-interfaces.js';
 
 /**
  * Implements storage for C4 diagrams and projects using lowdb
