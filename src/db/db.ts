@@ -1,7 +1,6 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { 
     C4Diagram, 
     C4Element, 
@@ -25,6 +24,14 @@ import {
     updateDiagramImpl,
     listDiagramsImpl
 } from './diagrams.js';
+import {
+    addElementImpl,
+    updateElementImpl
+} from './elements.js';
+import {
+    addRelationshipImpl,
+    updateRelationshipImpl
+} from './relationships.js';
 
 /**
  * Implements storage for C4 diagrams and projects using lowdb
@@ -204,36 +211,7 @@ export class DiagramDb implements DiagramStorage {
     * @returns The created element with generated ID
     */
     async addElement(projectId: string, diagramId: string, element: Omit<C4Element, 'id'>): Promise<C4Element> {
-        // Get the project and diagram
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-        
-        // Find the diagram in the project
-        const diagramIndex = project.diagrams.findIndex(d => d.id === diagramId);
-        if (diagramIndex === -1) {
-            throw new Error(`Diagram not found: ${diagramId}`);
-        }
-        
-        const diagram = project.diagrams[diagramIndex];
-        
-        // Create the new element with a generated ID
-        const newElement: C4Element = {
-            ...element,
-            id: uuidv4()
-        };
-    
-        // Add element to the diagram
-        diagram.elements.push(newElement);
-        
-        // Update timestamp on the diagram
-        diagram.updated = new Date().toISOString();
-        
-        // Save changes
-        await this.db.write();
-        
-        return newElement;
+        return await addElementImpl(this.db, projectId, diagramId, element);
     }
 
     /**
@@ -251,42 +229,7 @@ export class DiagramDb implements DiagramStorage {
         elementId: string, 
         updates: Partial<C4Element>
     ): Promise<C4Element> {
-        // Get the project and diagram
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-        
-        // Find the diagram in the project
-        const diagramIndex = project.diagrams.findIndex(d => d.id === diagramId);
-        if (diagramIndex === -1) {
-            throw new Error(`Diagram not found: ${diagramId}`);
-        }
-        
-        const diagram = project.diagrams[diagramIndex];
-        
-        // Find the element in the diagram
-        const elementIndex = diagram.elements.findIndex(e => e.id === elementId);
-        if (elementIndex === -1) {
-            throw new Error(`Element not found: ${elementId}`);
-        }
-        
-        // Get the existing element
-        const element = diagram.elements[elementIndex];
-        
-        // Create the updated element
-        const updated = { ...element, ...updates };
-        
-        // Update the element in the diagram
-        diagram.elements[elementIndex] = updated;
-        
-        // Update timestamp on the diagram
-        diagram.updated = new Date().toISOString();
-        
-        // Save changes
-        await this.db.write();
-        
-        return updated;
+        return await updateElementImpl(this.db, projectId, diagramId, elementId, updates);
     }
 
     /**
@@ -302,44 +245,7 @@ export class DiagramDb implements DiagramStorage {
         diagramId: string, 
         relationship: Omit<C4Relationship, 'id'>
     ): Promise<C4Relationship> {
-        // Get the project and diagram
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-        
-        // Find the diagram in the project
-        const diagramIndex = project.diagrams.findIndex(d => d.id === diagramId);
-        if (diagramIndex === -1) {
-            throw new Error(`Diagram not found: ${diagramId}`);
-        }
-        
-        const diagram = project.diagrams[diagramIndex];
-        
-        // Validate that both source and target elements exist
-        const sourceExists = diagram.elements.some(e => e.id === relationship.sourceId);
-        const targetExists = diagram.elements.some(e => e.id === relationship.targetId);
-        
-        if (!sourceExists || !targetExists) {
-            throw new Error('Source or target element not found');
-        }
-        
-        // Create the new relationship with a generated ID
-        const newRelationship: C4Relationship = {
-            ...relationship,
-            id: uuidv4()
-        };
-        
-        // Add relationship to the diagram
-        diagram.relationships.push(newRelationship);
-        
-        // Update timestamp on the diagram
-        diagram.updated = new Date().toISOString();
-        
-        // Save changes
-        await this.db.write();
-        
-        return newRelationship;
+        return await addRelationshipImpl(this.db, projectId, diagramId, relationship);
     }
 
     /**
@@ -357,53 +263,6 @@ export class DiagramDb implements DiagramStorage {
         relationshipId: string, 
         updates: Partial<C4Relationship>
     ): Promise<C4Relationship> {
-        // Get the project and diagram
-        const project = await this.getProject(projectId);
-        if (!project) {
-            throw new Error(`Project not found: ${projectId}`);
-        }
-        
-        // Find the diagram in the project
-        const diagramIndex = project.diagrams.findIndex(d => d.id === diagramId);
-        if (diagramIndex === -1) {
-            throw new Error(`Diagram not found: ${diagramId}`);
-        }
-        
-        const diagram = project.diagrams[diagramIndex];
-        
-        // Find the relationship in the diagram
-        const relationshipIndex = diagram.relationships.findIndex(r => r.id === relationshipId);
-        if (relationshipIndex === -1) {
-            throw new Error(`Relationship not found: ${relationshipId}`);
-        }
-        
-        const relationship = diagram.relationships[relationshipIndex];
-        
-        // If updating source/target, validate they exist
-        if (updates.sourceId || updates.targetId) {
-            const sourceId = updates.sourceId || relationship.sourceId;
-            const targetId = updates.targetId || relationship.targetId;
-            
-            const sourceExists = diagram.elements.some(e => e.id === sourceId);
-            const targetExists = diagram.elements.some(e => e.id === targetId);
-            
-            if (!sourceExists || !targetExists) {
-                throw new Error('Source or target element not found');
-            }
-        }
-        
-        // Create the updated relationship
-        const updated = { ...relationship, ...updates };
-        
-        // Update the relationship in the diagram
-        diagram.relationships[relationshipIndex] = updated;
-        
-        // Update timestamp on the diagram
-        diagram.updated = new Date().toISOString();
-        
-        // Save changes
-        await this.db.write();
-        
-        return updated;
+        return await updateRelationshipImpl(this.db, projectId, diagramId, relationshipId, updates);
     }
 }
