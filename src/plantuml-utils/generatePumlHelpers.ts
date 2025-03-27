@@ -219,16 +219,17 @@ return lines;
 
 /**
  * Process elements for a sequence diagram
- * Key difference: Boundaries don't use {} in sequence diagrams
+ * For sequence diagrams, we don't support boundaries to avoid complexity
  */
 export function processSequenceElements(elements: C4Element[]): string[] {
   const lines: string[] = [];
   const processedElementIds = new Set<string>();
   
-  // First process all non-boundary elements
+  // Process all elements as standalone participants
   elements.forEach(element => {
+    // Skip any boundary elements - we're not supporting them for sequence diagrams
     if (element.descriptor.variant === 'boundary') {
-      return; // Skip boundaries for now
+      return;
     }
     
     const id = element.id.replace(/[^\w]/g, '_');
@@ -247,31 +248,6 @@ export function processSequenceElements(elements: C4Element[]): string[] {
     processedElementIds.add(element.id);
   });
   
-  // Process boundary elements - different handling for sequence diagrams
-  elements.forEach(element => {
-    if (element.descriptor.variant !== 'boundary') {
-      return;
-    }
-    
-    const id = element.id.replace(/[^\w]/g, '_');
-    const name = element.name;
-    const description = element.description;
-    const macro = getElementMacro(element);
-    
-    // Special handling for sequence boundaries - no {}
-    const isBoundaryEnd = element.metadata?.isBoundaryEnd === true;
-    
-    if (isBoundaryEnd) {
-      // This is a boundary end marker
-      lines.push(`Boundary_End()`);
-    } else {
-      // Start boundary without closing brace
-      lines.push(`${macro}(${id}, "${name}", "${description}")`);
-    }
-    
-    processedElementIds.add(element.id);
-  });
-  
   return lines;
 }
 
@@ -283,15 +259,8 @@ export function addSequenceRelationships(diagram: C4Diagram, lines: string[]): v
   // Track processed relationships to prevent duplicates
   const processedRels = new Set<string>();
   
-  // Sort relationships by index if available
-  const relationships = [...diagram.relationships].sort((a, b) => {
-    const indexA = a.metadata?.index as number || 0;
-    const indexB = b.metadata?.index as number || 0;
-    return indexA - indexB;
-  });
-  
-  // Add relationships with special sequence parameters
-  relationships.forEach(rel => {
+  // Use the relationships as they are (no sorting by index)
+  diagram.relationships.forEach(rel => {
     const source = diagram.elements.find(e => e.id === rel.sourceId);
     const target = diagram.elements.find(e => e.id === rel.targetId);
     
@@ -307,14 +276,55 @@ export function addSequenceRelationships(diagram: C4Diagram, lines: string[]): v
       if (!processedRels.has(relKey)) {
         processedRels.add(relKey);
         
-        // Add sequence-specific parameters if available
-        const indexParam = rel.metadata?.index ? `, $index=${rel.metadata.index}` : '';
+        // Only include the rel parameter, not the index
         const relParam = rel.metadata?.rel ? `, $rel="${rel.metadata.rel}"` : '';
         
-        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr}${indexParam}${relParam})`);
+        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr}${relParam})`);
       }
     }
   });
+}
+
+/**
+ * Generate PlantUML source for special sequence diagram elements
+ * Handles sequence-specific constructs like dividers and groups
+ */
+export function processSequenceSpecialElements(elements: C4Element[]): string[] {
+  const lines: string[] = [];
+  
+  // Sort elements by creation time if available to maintain sequence
+  const sortedElements = [...elements].sort((a, b) => {
+    const createdA = a.metadata?.created as string;
+    const createdB = b.metadata?.created as string;
+    if (createdA && createdB) {
+      return new Date(createdA).getTime() - new Date(createdB).getTime();
+    }
+    return 0;
+  });
+  
+  // Process special sequence elements like dividers and groups
+  sortedElements.forEach(element => {
+    if (element.metadata?.isSequenceDivider) {
+      // Generate divider syntax
+      const title = element.metadata.dividerTitle as string || element.name;
+      lines.push(`== ${title} ==`);
+    } else if (element.metadata?.isSequenceGroup) {
+      // Generate group syntax
+      const title = element.metadata.groupTitle as string || element.name;
+      const description = element.metadata.groupDescription as string || element.description;
+      
+      if (element.metadata.isGroupEnd) {
+        lines.push('end');
+      } else {
+        lines.push(`group ${title}`);
+        if (description && description !== 'Sequence Diagram Group') {
+          lines.push(`note "${description}"`);
+        }
+      }
+    }
+  });
+  
+  return lines;
 }
   
 // Function to add relationships after all elements are defined

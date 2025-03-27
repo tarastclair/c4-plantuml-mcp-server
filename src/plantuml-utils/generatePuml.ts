@@ -1,7 +1,7 @@
 import { C4Diagram, DiagramType, Project } from '../types-and-interfaces.js';
 import { savePumlFile } from '../filesystem-utils.js';
 import { DiagramDb } from '../db/index.js';
-import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships, processSequenceElements, addSequenceRelationships } from './index.js';
+import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships, processSequenceElements, addSequenceRelationships, processSequenceSpecialElements } from './index.js';
 
 /**
  * Generate PlantUML source for a diagram
@@ -17,17 +17,6 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   // Header
   lines.push('@startuml');
   lines.push(getPlantUMLImport(diagram.diagramType));
-  
-  // Add sequence diagram options if specified
-  if (diagram.metadata?.showElementDescriptions) {
-    lines.push('SHOW_ELEMENT_DESCRIPTIONS()');
-  }
-  if (diagram.metadata?.showFootBoxes) {
-    lines.push('SHOW_FOOT_BOXES()');
-  }
-  if (diagram.metadata?.showIndex) {
-    lines.push('SHOW_INDEX()');
-  }
 
   lines.push('');
   
@@ -58,6 +47,10 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
     // Use sequence-specific processing
     const elementLines = processSequenceElements(diagram.elements);
     lines.push(...elementLines);
+    
+    // Add special sequence elements (dividers, groups, etc.)
+    const specialElementLines = processSequenceSpecialElements(diagram.elements);
+    lines.push(...specialElementLines);
   } else {
     const elementLines = processElements(diagram.elements);
     lines.push(...elementLines);
@@ -174,10 +167,12 @@ switch (diagram.diagramType) {
     case DiagramType.SEQUENCE:
     lines.push("' Add sequence diagram elements and relationships, for example:");
     lines.push("' Person(user, \"User\", \"A user of the system\")");
-    lines.push("' Container_Boundary(b, \"API Application\")");
     lines.push("' Component(c1, \"Controller\", \"Spring MVC\", \"Handles HTTP requests\")");
-    lines.push("' Boundary_End()");
-    lines.push("' Rel(user, c1, \"Makes API request\", \"HTTP\", $index=1)");
+    lines.push("' Rel(user, c1, \"Makes API request\", \"HTTP\")");
+    lines.push("' == Authentication Step ==");  // Example divider
+    lines.push("' group Login Process");         // Example group
+    lines.push("' Rel(c1, db, \"Verifies credentials\", \"JDBC\")");
+    lines.push("' end");                        // End of group
     lines.push("' SHOW_ELEMENT_DESCRIPTIONS()"); // Special options for sequence diagrams
     break;
 }

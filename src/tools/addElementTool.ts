@@ -3,13 +3,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db/index.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, createDiagramMetadata } from "../utils.js";
+import { DiagramType, InterfaceElementType } from "../types-and-interfaces.js";
 import * as personHelpers from "./internal/personElementHelpers.js";
 import * as systemHelpers from "./internal/systemElementHelpers.js";
 import * as containerHelpers from "./internal/containerElementHelpers.js";
 import * as componentHelpers from "./internal/componentEntityHelpers.js";
 import * as boundaryHelpers from "./internal/boundaryEntityHelpers.js";
 import * as interfaceHelpers from "./internal/interfaceElementHelpers.js";
-import { DiagramType, InterfaceElementType } from "../types-and-interfaces.js";
+import * as sequenceHelpers from "./internal/sequenceEntityHelpers.js";
 
 export const addElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
@@ -22,7 +23,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     Required Input Fields:
     - projectId: String (UUID of the project)
     - diagramId: String (UUID of the diagram)
-    - elementType: String (Type of element: "person", "system", "container", "component", "boundary", "interface", "type", "enum")
+    - elementType: String (Type of element: "person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group")
     - variant: String (Variant of the element: "standard", "external", "db", "queue",  "system", "container")
     - name: String (Name of the element)
     - description: String (Description of the element)
@@ -46,7 +47,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),
-      elementType: z.enum(["person", "system", "container", "component", "boundary", "interface", "type", "enum"]).describe("Type of element to add"),
+      elementType: z.enum(["person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group"]).describe("Type of element to add"),
       variant: z.enum(["standard", "external", "db", "queue", "system", "container", "generic"]).describe("Variant of the element"),
       name: z.string().describe("Name of the element"),
       description: z.string().describe("Description of the element"),
@@ -231,6 +232,29 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                     params.technology,
                     params.boundaryId
                 );
+                break;
+            
+            case "divider":
+                if (diagram.diagramType !== DiagramType.SEQUENCE) {
+                    return createErrorResponse("Dividers can only be added to sequence diagrams");
+                }
+                result = await sequenceHelpers.createDivider({
+                    projectId: params.projectId,
+                    diagramId: params.diagramId,
+                    title: params.name
+                }, db);
+                break;
+            
+            case "group":
+                if (diagram.diagramType !== DiagramType.SEQUENCE) {
+                    return createErrorResponse("Groups can only be added to sequence diagrams");
+                }
+                result = await sequenceHelpers.createGroup({
+                    projectId: params.projectId,
+                    diagramId: params.diagramId,
+                    title: params.name,
+                    description: params.description
+                }, db);
                 break;
             
             default:

@@ -50,13 +50,8 @@ export enum InterfaceRelationshipType {
     CONTAINS = 'contains'
 }
 
-export interface SequenceBoundaryType {
-    isBoundaryEnd?: boolean; // Flag to indicate if this is a Boundary_End() call
-}
-
 // Extend relationship interface for sequence-specific properties
 export interface SequenceMessageProperties {
-    index?: number;      // For activation index management
     rel?: string;        // For special arrow types in sequence diagrams
 }
 
