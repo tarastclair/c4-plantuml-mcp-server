@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DiagramDb } from "../db.js";
+import { DiagramDb } from "../db/index.js";
 import { createProjectDirectories } from "../filesystem-utils.js";
 import { createToolResponse, createErrorResponse, getErrorMessage, DiagramElementMapping } from "../utils.js";
 import path from "path";

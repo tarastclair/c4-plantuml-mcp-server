@@ -97,6 +97,7 @@ In the examples below, a single Markdown document containing some high-level des
 
 ### TO DO
 - AI disclaimers
-- Add external containers/components to the interface diagram
+- Test: Add external containers/components to the interface diagram
 - Support note elements
-- sequence diagrams
+- Support sequence diagrams
+- Support doc maps

@@ -4,9 +4,9 @@
  * Helper functions for creating container entities in C4 diagrams
  * Supports all container variants: standard, external, db, queue, and combinations
  */
-import { DiagramDb } from "../../db.js";
+import { DiagramDb } from "../../db/index.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
-import { generateDiagramSourceFromState } from "../../plantuml-utils.js";
+import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";
 
 /**
  * Common parameters for container element creation

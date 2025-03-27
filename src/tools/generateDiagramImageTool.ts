@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs/promises";
 import axios from 'axios';
-import { DiagramDb } from "../db.js";
-import { generateAndSaveDiagramImage } from "../plantuml-utils.js";
+import { DiagramDb } from "../db/index.js";
+import { generateAndSaveDiagramImage } from "../plantuml-utils/index.js";
 import { createToolResponse, getErrorMessage, createErrorResponse, createDiagramMetadata } from "../utils.js";
 
 /**
