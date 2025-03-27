@@ -22,7 +22,8 @@ export const DIRECTORY_NAMES = {
   [DiagramType.CONTAINER]: 'container',
   [DiagramType.COMPONENT]: 'component',
   [DiagramType.CODE]: 'code',
-  [DiagramType.INTERFACE]: 'interface'
+  [DiagramType.INTERFACE]: 'interface',
+  [DiagramType.SEQUENCE]: 'sequence'
 };
 
 /**

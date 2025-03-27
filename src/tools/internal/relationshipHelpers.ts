@@ -34,6 +34,7 @@ export interface RelationshipParams {
   sprite?: string;      // Optional sprite/icon
   tags?: string;        // Optional styling tags
   link?: string;        // Optional URL link
+  rel?: string;         // Arrow style for sequence diagrams
 }
 
 /**
@@ -78,6 +79,7 @@ async function createRelationshipCore(
   if (params.sprite) metadata.sprite = params.sprite;
   if (params.tags) metadata.tags = params.tags;
   if (params.link) metadata.link = params.link;
+  if (params.rel) metadata.rel = params.rel;
 
   // Add the relationship to the diagram
   const relationship = await db.addRelationship(params.projectId, params.diagramId, {

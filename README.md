@@ -13,6 +13,7 @@ Here is an example of a context diagram generated exclusively by Claude for this
 - Container diagrams
 - Component diagrams
 - Custom C4-styled type/interface/enum relationship diagrams, focused on their relationships with Containers and NOT including specific implementation details or properties (see example below)
+- C4-styled sequence diagrams (no boundaries or indexing)
 
 ## Prerequisites
 
@@ -99,5 +100,4 @@ In the examples below, a single Markdown document containing some high-level des
 - AI disclaimers
 - Test: Add external containers/components to the interface diagram
 - Support note elements
-- Support sequence diagrams
 - Support doc maps
