@@ -276,10 +276,11 @@ export function addSequenceRelationships(diagram: C4Diagram, lines: string[]): v
       if (!processedRels.has(relKey)) {
         processedRels.add(relKey);
         
-        // Only include the rel parameter, not the index
-        const relParam = rel.metadata?.rel ? `, $rel="${rel.metadata.rel}"` : '';
+        // Format the relationship with proper parameter positioning
+        const relParam = rel.metadata?.rel ? `$rel="${rel.metadata.rel}"` : '';
         
-        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr}${relParam})`);
+        // Add 5 empty commas to position $rel at the end
+        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr},,,,,, ${relParam})`);
       }
     }
   });

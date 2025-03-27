@@ -35,6 +35,18 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
     - sprite: String (Icon/sprite for the relationship)
     - tags: String (Styling tags for the relationship)
     - link: String (URL link for the relationship)
+    - rel: String (for sequence diagrams)
+
+    For sequence diagrams, you can specify custom arrow styles using the rel parameter:
+    - Common examples: "->", "-->", "<-", "o->", "->o", "->" 
+    - The rel parameter accepts any valid PlantUML arrow syntax
+    - For example, "o->" represents an asynchronous message, "->o" represents a message to a participant's lifeline
+    - For the complete reference of arrow types, refer to PlantUML's sequence diagram documentation
+    
+    Examples:
+    - A standard synchronous call: $rel="->" (solid arrow)
+    - An asynchronous message: $rel="o->" (starting with a circle)
+    - A return message: $rel="<-" (arrow pointing backward)
     
     The response will include unique IDs that you'll need for all subsequent operations,
     as well as a state object that will direct you to the appropriate next step to take.
@@ -59,7 +71,8 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
       ] as const).default('standard').describe("Direction of the relationship"),
       sprite: z.string().optional().describe("Optional sprite/icon for the relationship"),
       tags: z.string().optional().describe("Optional styling tags for the relationship"),
-      link: z.string().optional().describe("Optional URL link for the relationship")
+      link: z.string().optional().describe("Optional URL link for the relationship"),
+      rel: z.string().optional().describe("Arrow style for sequence diagrams (e.g., \"o->\", \"-->\", \"<-\")")
     },
     async ({ 
       projectId, 
@@ -71,7 +84,8 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
       direction,
       sprite,
       tags,
-      link
+      link,
+      rel
     }, extra) => {
       try {
         // Check if project exists
@@ -103,7 +117,8 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
           technology,
           sprite,
           tags,
-          link
+          link,
+          rel
         };
 
         // Call the appropriate helper function based on the direction
@@ -158,9 +173,9 @@ export const addRelationshipTool = (server: McpServer, db: DiagramDb): void => {
         const message = `Added relationship "${description}"${directionInfo} from "${sourceName}" to "${targetName}".\n\n${updateHelperMessage}`;
 
         // Build complete metadata for the diagram
-        const metadata = createDiagramMetadata(updatedDiagram, projectId);
+        const toolMetadata = createDiagramMetadata(updatedDiagram, projectId);
 
-        return createToolResponse(message, metadata);
+        return createToolResponse(message, toolMetadata);
       } catch (error) {
         return createErrorResponse(`Error adding relationship: ${getErrorMessage(error)}`);
       }
