@@ -318,9 +318,6 @@ export function processSequenceSpecialElements(elements: C4Element[]): string[] 
         lines.push('end');
       } else {
         lines.push(`group ${title}`);
-        if (description && description !== 'Sequence Diagram Group') {
-          lines.push(`note "${description}"`);
-        }
       }
     }
   });

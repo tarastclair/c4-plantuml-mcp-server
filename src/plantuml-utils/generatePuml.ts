@@ -22,17 +22,22 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   
   // Title and description
   lines.push(`title ${diagram.name}`);
-  if (diagram.description) {
+  
+  // For sequence diagrams, skip adding notes about description and project
+  // This is because C4-PlantUML sequence diagrams don't support these notes
+  if (diagram.diagramType !== DiagramType.SEQUENCE) {
+    if (diagram.description) {
+      lines.push('');
+      lines.push(`note as DiagramDescription`);
+      lines.push(diagram.description);
+      lines.push('end note');
+    }
     lines.push('');
-    lines.push(`note as DiagramDescription`);
-    lines.push(diagram.description);
+    lines.push('note as ExistingProject');
+    lines.push(`This diagram is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
     lines.push('end note');
+    lines.push('');
   }
-  lines.push('');
-  lines.push('note as ExistingProject');
-  lines.push(`This diagram is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
-  lines.push('end note');
-  lines.push('');
 
   // Special setup for interfaces diagrams
   if (diagram.diagramType === DiagramType.INTERFACE) {
@@ -129,7 +134,9 @@ lines.push('');
 
 // Title and empty diagram note
 lines.push(`title ${diagram.name}`);
-if (diagram.description) {
+
+// Skip notes for sequence diagrams
+if (diagram.diagramType !== DiagramType.SEQUENCE && diagram.description) {
     lines.push('');
     lines.push(`note as DiagramDescription`);
     lines.push(diagram.description);
