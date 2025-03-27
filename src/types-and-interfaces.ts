@@ -16,7 +16,8 @@ export enum DiagramType {
     CONTAINER = 'container',
     COMPONENT = 'component',
     CODE = 'code',
-    INTERFACE = 'interface'
+    INTERFACE = 'interface',
+    SEQUENCE = 'sequence'
 }
 
 // Base element types that can appear in C4 diagrams
@@ -47,6 +48,16 @@ export enum InterfaceRelationshipType {
     USES = 'uses',
     REFERENCES = 'references',
     CONTAINS = 'contains'
+}
+
+export interface SequenceBoundaryType {
+    isBoundaryEnd?: boolean; // Flag to indicate if this is a Boundary_End() call
+}
+
+// Extend relationship interface for sequence-specific properties
+export interface SequenceMessageProperties {
+    index?: number;      // For activation index management
+    rel?: string;        // For special arrow types in sequence diagrams
 }
 
 // Composite type descriptor for elements

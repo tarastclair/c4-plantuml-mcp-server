@@ -1,7 +1,7 @@
 import { C4Diagram, DiagramType, Project } from '../types-and-interfaces.js';
 import { savePumlFile } from '../filesystem-utils.js';
 import { DiagramDb } from '../db/index.js';
-import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships } from './index.js';
+import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships, processSequenceElements, addSequenceRelationships } from './index.js';
 
 /**
  * Generate PlantUML source for a diagram
@@ -17,6 +17,18 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   // Header
   lines.push('@startuml');
   lines.push(getPlantUMLImport(diagram.diagramType));
+  
+  // Add sequence diagram options if specified
+  if (diagram.metadata?.showElementDescriptions) {
+    lines.push('SHOW_ELEMENT_DESCRIPTIONS()');
+  }
+  if (diagram.metadata?.showFootBoxes) {
+    lines.push('SHOW_FOOT_BOXES()');
+  }
+  if (diagram.metadata?.showIndex) {
+    lines.push('SHOW_INDEX()');
+  }
+
   lines.push('');
   
   // Title and description
@@ -42,6 +54,10 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   if (diagram.diagramType === DiagramType.INTERFACE) {
     const elementLines = processInterfaceDiagramElements(diagram.elements);
     lines.push(...elementLines);
+  } else if (diagram.diagramType === DiagramType.SEQUENCE) {
+    // Use sequence-specific processing
+    const elementLines = processSequenceElements(diagram.elements);
+    lines.push(...elementLines);
   } else {
     const elementLines = processElements(diagram.elements);
     lines.push(...elementLines);
@@ -51,6 +67,8 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   // Add relationships with the appropriate method based on diagram type
   if (diagram.diagramType === DiagramType.INTERFACE) {
     addInterfaceDiagramRelationships(diagram, lines);
+  } else if (diagram.diagramType === DiagramType.SEQUENCE) {
+    addSequenceRelationships(diagram, lines);
   } else {
     addRelationships(diagram, lines);
   }
@@ -152,6 +170,15 @@ switch (diagram.diagramType) {
     lines.push("' Component(interface, \"Interface\", \"Java\", \"Defines contract\")");
     lines.push("' Component(implementation, \"Implementation\", \"Java\", \"Implements interface\")");
     lines.push("' Rel(implementation, interface, \"Implements\")");
+    break;
+    case DiagramType.SEQUENCE:
+    lines.push("' Add sequence diagram elements and relationships, for example:");
+    lines.push("' Person(user, \"User\", \"A user of the system\")");
+    lines.push("' Container_Boundary(b, \"API Application\")");
+    lines.push("' Component(c1, \"Controller\", \"Spring MVC\", \"Handles HTTP requests\")");
+    lines.push("' Boundary_End()");
+    lines.push("' Rel(user, c1, \"Makes API request\", \"HTTP\", $index=1)");
+    lines.push("' SHOW_ELEMENT_DESCRIPTIONS()"); // Special options for sequence diagrams
     break;
 }
 

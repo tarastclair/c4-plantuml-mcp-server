@@ -21,6 +21,8 @@ export function getPlantUMLImport(diagramType: DiagramType): string {
     case DiagramType.INTERFACE:
       // For interfaces diagrams, we use Component as base and add custom definitions
       return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml';
+    case DiagramType.SEQUENCE:
+      return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml';
     default:
       // Default to context diagram
       return '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml';

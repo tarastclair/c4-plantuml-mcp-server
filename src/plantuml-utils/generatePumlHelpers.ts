@@ -216,6 +216,106 @@ elements.forEach(element => {
 
 return lines;
 }
+
+/**
+ * Process elements for a sequence diagram
+ * Key difference: Boundaries don't use {} in sequence diagrams
+ */
+export function processSequenceElements(elements: C4Element[]): string[] {
+  const lines: string[] = [];
+  const processedElementIds = new Set<string>();
+  
+  // First process all non-boundary elements
+  elements.forEach(element => {
+    if (element.descriptor.variant === 'boundary') {
+      return; // Skip boundaries for now
+    }
+    
+    const id = element.id.replace(/[^\w]/g, '_');
+    const name = element.name;
+    const description = element.description;
+    const macro = getElementMacro(element);
+    const techStr = element.technology ? `, "${element.technology}"` : '';
+    
+    // Add standalone elements (participants in sequence diagram)
+    if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
+      lines.push(`${macro}(${id}, "${name}"${techStr}, "${description}")`);
+    } else {
+      lines.push(`${macro}(${id}, "${name}", "${description}")`);
+    }
+    
+    processedElementIds.add(element.id);
+  });
+  
+  // Process boundary elements - different handling for sequence diagrams
+  elements.forEach(element => {
+    if (element.descriptor.variant !== 'boundary') {
+      return;
+    }
+    
+    const id = element.id.replace(/[^\w]/g, '_');
+    const name = element.name;
+    const description = element.description;
+    const macro = getElementMacro(element);
+    
+    // Special handling for sequence boundaries - no {}
+    const isBoundaryEnd = element.metadata?.isBoundaryEnd === true;
+    
+    if (isBoundaryEnd) {
+      // This is a boundary end marker
+      lines.push(`Boundary_End()`);
+    } else {
+      // Start boundary without closing brace
+      lines.push(`${macro}(${id}, "${name}", "${description}")`);
+    }
+    
+    processedElementIds.add(element.id);
+  });
+  
+  return lines;
+}
+
+/**
+ * Add relationships for sequence diagrams
+ * Special handling for $index and $rel parameters
+ */
+export function addSequenceRelationships(diagram: C4Diagram, lines: string[]): void {
+  // Track processed relationships to prevent duplicates
+  const processedRels = new Set<string>();
+  
+  // Sort relationships by index if available
+  const relationships = [...diagram.relationships].sort((a, b) => {
+    const indexA = a.metadata?.index as number || 0;
+    const indexB = b.metadata?.index as number || 0;
+    return indexA - indexB;
+  });
+  
+  // Add relationships with special sequence parameters
+  relationships.forEach(rel => {
+    const source = diagram.elements.find(e => e.id === rel.sourceId);
+    const target = diagram.elements.find(e => e.id === rel.targetId);
+    
+    if (source && target) {
+      const sourceId = source.id.replace(/[^\w]/g, '_');
+      const targetId = target.id.replace(/[^\w]/g, '_');
+      const techStr = rel.technology ? `, "${rel.technology}"` : '';
+      
+      // Create a unique key for this relationship
+      const relKey = `${sourceId}-${targetId}-${rel.description}`;
+      
+      // Only add if we haven't seen this relationship before
+      if (!processedRels.has(relKey)) {
+        processedRels.add(relKey);
+        
+        // Add sequence-specific parameters if available
+        const indexParam = rel.metadata?.index ? `, $index=${rel.metadata.index}` : '';
+        const relParam = rel.metadata?.rel ? `, $rel="${rel.metadata.rel}"` : '';
+        
+        lines.push(`Rel(${sourceId}, ${targetId}, "${rel.description}"${techStr}${indexParam}${relParam})`);
+      }
+    }
+  });
+}
   
 // Function to add relationships after all elements are defined
 export function addRelationships(diagram: C4Diagram, lines: string[]): void {
