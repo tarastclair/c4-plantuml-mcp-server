@@ -1,9 +1,10 @@
 /**
- * relationshipHelpers.ts
- * 
- * Helper functions for creating relationships between elements in C4 diagrams
- * Supports all relationship types/directions from C4-PlantUML
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
+
 import { DiagramDb } from "../../db/index.js";
 import { C4Diagram, C4Relationship } from "../../types-and-interfaces.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";

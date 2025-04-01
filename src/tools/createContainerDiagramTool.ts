@@ -1,8 +1,10 @@
 /**
- * createContainerDiagramTool.ts
- * 
- * Tool for creating a new C4 Container diagram within a project
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DiagramDb } from "../db/index.js";

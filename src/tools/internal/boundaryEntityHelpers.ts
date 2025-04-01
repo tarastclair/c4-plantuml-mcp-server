@@ -1,10 +1,10 @@
 /**
- * boundaryEntityHelpers.ts
- * 
- * Helper functions for creating boundary entities in C4 diagrams
- * Supports all boundary types: system, and container
- * Boundaries are used to group related elements and establish hierarchical relationships
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
+
 import { DiagramDb } from "../../db/index.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";

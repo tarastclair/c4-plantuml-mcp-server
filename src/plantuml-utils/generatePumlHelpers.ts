@@ -1,3 +1,10 @@
+/**
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
+ */
+
 import { C4Diagram, C4Element } from '../types-and-interfaces.js';
 import { getElementMacro } from './getters.js';
 

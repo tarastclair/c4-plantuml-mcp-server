@@ -1,9 +1,10 @@
 /**
- * containerElementHelpers.ts
- * 
- * Helper functions for creating container entities in C4 diagrams
- * Supports all container variants: standard, external, db, queue, and combinations
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
+
 import { DiagramDb } from "../../db/index.js";
 import { BaseElementType, ElementVariant, C4Element, C4Diagram } from "../../types-and-interfaces.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";

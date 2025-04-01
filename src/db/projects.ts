@@ -1,3 +1,10 @@
+/**
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
+ */
+
 import { Low } from 'lowdb';
 import { DatabaseSchema, Project } from '../types-and-interfaces.js';
 
