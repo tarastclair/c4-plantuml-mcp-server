@@ -31,7 +31,7 @@ Here is an example of a context diagram generated exclusively by Claude for this
 
 2. Install dependencies:
 ```bash
-cd plantuml-mcp-server
+cd c4-plantuml-mcp-server
 npm install
 ```
 
@@ -60,9 +60,9 @@ npm run build
           ]
         },
         "c4-plantuml": {
-          "command": "npx",
+          "command": "node",
           "args": [
-            "c4-plantuml-server"
+            "path/to/c4-plantuml-mcp-server/build/index.js"
           ]
         },
       }
