@@ -80,16 +80,12 @@ In the examples below, a single Markdown document containing some high-level des
 ### Basic usage
 The video below shows a user prompting Claude with a simple concept statement for an app they'd like to design. While an optional step, the user also feeds some documentation into the prompt to increase the accuracy of the generated design. The AI then generates a C4 Context diagram, as requested, by thinking through the design and then generating each of the elements and their relationships. The PUML syntax to support the diagram is constantly being updated on disk. When the AI determines it has finished, it generates a png image of the completed PUML source code and saves it to disk.
 
-<video autoplay loop muted playsinline>
-  <source src="doc/img/basic-usage.mp4" type="video/mp4">
-</video>
+![Basic Usage](./doc/img/basic-usage.mp4)
 
 ### Creating additional diagrams
 The video below shows a user asking Claude to create the next-detailed C4 diagram, a Container diagram, to zoom in on the system that was defined in the Context diagram. The AI follows a similar thinking step as seen before, then creates a new Container diagram in the same project, adds the elements and relationships that it determines to be necessary, and then generates a png image of the completed diagram when it's finished. This additional diagram is created in the same chat session, but you can split this up over multiple sessions as well. Check out the [Tips](#tips) section below for more details.
 
-<video autoplay loop muted playsinline>
-  <source src="/doc/img/additional-diagrams.mp4" type="video/mp4">
-</video>
+![Additional Diagrams](./doc/img/additional-diagrams.mp4)
 
 ### Updating diagrams
 
