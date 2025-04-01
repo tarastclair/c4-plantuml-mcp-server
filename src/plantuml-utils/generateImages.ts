@@ -1,3 +1,10 @@
+/**
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
+ */
+
 import axios from 'axios';
 import { encode as encodePlantUMLWithDeflate } from 'plantuml-encoder';
 import { savePngFile } from '../filesystem-utils.js';

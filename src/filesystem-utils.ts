@@ -1,12 +1,8 @@
 /**
- * filesystem-utils.ts
- * 
- * Utilities for managing the filesystem structure of C4 projects
- * 
- * We're implementing a directory-based approach where:
- * - Each project has a root directory
- * - Each diagram type has its own subdirectory
- * - Diagram relationships are encoded through naming conventions
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
 
 import fs from 'fs/promises';

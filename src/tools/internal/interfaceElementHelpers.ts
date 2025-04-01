@@ -1,7 +1,10 @@
 /**
- * Helper functions for working with interface diagram elements
- * Provides specialized handling for interface, type, and enum elements
+ * AI ASSISTANCE DISCLAIMER
+ * Parts of this code were written with the assistance of an AI language model.
+ * While efforts have been made to ensure quality and correctness,
+ * please review thoroughly before implementing in production environments.
  */
+
 import { DiagramDb } from "../../db/index.js";
 import { generateDiagramSourceFromState } from "../../plantuml-utils/index.js";
 import { C4Element, InterfaceElementType, BaseElementType, ElementVariant, C4Diagram } from "../../types-and-interfaces.js";

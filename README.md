@@ -78,16 +78,18 @@ npm run build
 In the examples below, a single Markdown document containing some high-level design infomation for this example application was included in Claude's Project Knowledge. You can include more detailed information, code files, or use the Filesystem MCP server to point Claude to a directory containing the files you would like it to use as context for your project.
 
 ### Basic usage
+The video below shows a user prompting Claude with a simple concept statement for an app they'd like to design. While an optional step, the user also feeds some documentation into the prompt to increase the accuracy of the generated design. The AI then generates a C4 Context diagram, as requested, by thinking through the design and then generating each of the elements and their relationships. The PUML syntax to support the diagram is constantly being updated on disk. When the AI determines it has finished, it generates a png image of the completed PUML source code and saves it to disk.
 
-*Insert video here*
+![Basic Usage](./doc/img/basic-usage.gif)
 
 ### Creating additional diagrams
+The video below shows a user asking Claude to create the next-detailed C4 diagram, a Container diagram, to zoom in on the system that was defined in the Context diagram. The AI follows a similar thinking step as seen before, then creates a new Container diagram in the same project, adds the elements and relationships that it determines to be necessary, and then generates a png image of the completed diagram when it's finished. This additional diagram is created in the same chat session, but you can split this up over multiple sessions as well. Check out the [Tips](#tips) section below for more details.
 
-*Insert video here*
+![Additional Diagrams](./doc/img/additional-diagrams.gif)
 
 ### Updating diagrams
 
-*Insert video here*
+The tool descriptions push the AI toward updating existing diagrams rather than creating new ones. You can make changes simply by prompting with something like "*Let's simplify this diagram by representing all of the disparate user personas as a single "HOA member" user*". If you would prefer to create a new version of your diagram instead, simply include that instruction in your prompt.
 
 ### Tips
 
@@ -95,9 +97,3 @@ In the examples below, a single Markdown document containing some high-level des
 - This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
 - If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
 - If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
-
-### TO DO
-- AI disclaimers
-- Test: Add external containers/components to the interface diagram
-- Support note elements
-- Support doc maps
