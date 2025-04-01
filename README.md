@@ -85,7 +85,7 @@ The video below shows a user prompting Claude with a simple concept statement fo
 ### Creating additional diagrams
 The video below shows a user asking Claude to create the next-detailed C4 diagram, a Container diagram, to zoom in on the system that was defined in the Context diagram. The AI follows a similar thinking step as seen before, then creates a new Container diagram in the same project, adds the elements and relationships that it determines to be necessary, and then generates a png image of the completed diagram when it's finished. This additional diagram is created in the same chat session, but you can split this up over multiple sessions as well. Check out the [Tips](#tips) section below for more details.
 
-![Additional Diagrams](./doc/img/additional-diagrams.mp4)
+![Additional Diagrams](./doc/img/additional-diagrams.gif)
 
 ### Updating diagrams
 
