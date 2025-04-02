@@ -207,7 +207,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
                 };
                 
                 // Route to specific boundary helper based on variant
-                if (params.variant === "system") {
+                if (params.variant === "system" || params.variant === "standard") {
                     result = await boundaryHelpers.createSystemBoundary(boundaryParams, db);
                 } else if (params.variant === "container") {
                     result = await boundaryHelpers.createContainerBoundary(boundaryParams, db);
