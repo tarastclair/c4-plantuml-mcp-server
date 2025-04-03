@@ -34,7 +34,8 @@ export type BaseElementType =
     | 'container'
     | 'component'
     | 'class'
-    | 'interface';
+    | 'interface'
+    | 'note';
 
 // Variants that modify the visual representation of elements
 export type ElementVariant =
