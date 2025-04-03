@@ -94,7 +94,7 @@ The tool descriptions push the AI toward updating existing diagrams rather than 
 ### Tips
 
 - Having the official [Sequential Thinking MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking) installed will greatly enhance your experience if you have a complex project by enabling the AI to think critically about your project to design the elements for your diagrams and their relationships.
-- This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt.
+- This tool will generate PUML source code and png images for your diagrams using a pre-configured directory structure. You can include the path where you would like that directory to be created in your initial prompt with something like "I'd like all generated files to be created in `/tmp`".
 - If you generate different diagram levels across multiple chats, it is recommended that you upload the generated PUML source code from each completed diagram to the project knowledge (or utilize the `filesystem` MCP server and point Claude to the directory) so that it has access to all of the IDs to fetch in the database.
   - The ID of each diagram and the project that it belongs to are written to notes in the PUML source code, so you (or the AI) can easily find them.
 - If the call to the `generate-diagram-image` tool to create the png version of your diagram fails, as it sometimes does because we are using the public PlantUML server for this beta version of the code base, you can ask it to try again with a prompt like "Can you try again to generate the diagram image?".
