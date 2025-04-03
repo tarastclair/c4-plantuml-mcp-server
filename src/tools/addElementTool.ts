@@ -17,6 +17,7 @@ import * as componentHelpers from "./internal/componentEntityHelpers.js";
 import * as boundaryHelpers from "./internal/boundaryEntityHelpers.js";
 import * as interfaceHelpers from "./internal/interfaceElementHelpers.js";
 import * as sequenceHelpers from "./internal/sequenceEntityHelpers.js";
+import * as noteHelpers from "./internal/noteElementHelpers.js";
 
 export const addElementTool = (server: McpServer, db: DiagramDb): void => {
   server.tool(
@@ -29,7 +30,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     Required Input Fields:
     - projectId: String (UUID of the project)
     - diagramId: String (UUID of the diagram)
-    - elementType: String (Type of element: "person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group")
+    - elementType: String (Type of element: "note", "person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group")
     - variant: String (Variant of the element: "standard", "external", "db", "queue",  "system", "container")
     - name: String (Name of the element)
     - description: String (Description of the element)
@@ -53,7 +54,7 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
     {
       projectId: z.string().describe("UUID of the project"),
       diagramId: z.string().describe("UUID of the diagram"),
-      elementType: z.enum(["person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group"]).describe("Type of element to add"),
+      elementType: z.enum(["note", "person", "system", "container", "component", "boundary", "interface", "type", "enum", "divider", "group"]).describe("Type of element to add"),
       variant: z.enum(["standard", "external", "db", "queue", "system", "container", "generic"]).describe("Variant of the element"),
       name: z.string().describe("Name of the element"),
       description: z.string().describe("Description of the element"),
@@ -82,6 +83,18 @@ export const addElementTool = (server: McpServer, db: DiagramDb): void => {
 
         // Route to the appropriate helper based on element type and variant
         switch (params.elementType) {
+            case "note":
+                //Create note-specific params
+                const noteParams = {
+                    projectId: params.projectId,
+                    diagramId: params.diagramId,
+                    name: params.name,
+                    description: params.description
+                };
+
+                result = await noteHelpers.createStandardNote(noteParams, db);
+                break;
+
             case "person":
                 // Create person-specific params
                 const personParams = {

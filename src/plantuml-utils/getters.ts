@@ -47,6 +47,11 @@ export function getElementMacro(element: {
   descriptor: { baseType: string; variant?: string; boundaryType?: string, interfaceType?: string }
 }): string {
   const { baseType, variant, boundaryType, interfaceType  } = element.descriptor;
+
+  // Special case for Note elements
+  if (baseType === 'note') {
+    return 'Note'; // Return "Note" as the macro name
+  }
   
   // Handle boundary elements
   if (variant === 'boundary') {

@@ -32,6 +32,15 @@ export function processElements(elements: C4Element[]): string[] {
       const description = element.description;
       const macro = getElementMacro(element);
       const techStr = element.technology ? `, "${element.technology}"` : '';
+
+      // Special handling for Note elements
+      if (element.descriptor.baseType === 'note') {
+        lines.push(`note as ${id}`);
+        lines.push(element.description);
+        lines.push('end note');
+        processedElementIds.add(element.id);
+        return;
+      }
       
       // Add standalone elements
       if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
@@ -85,8 +94,13 @@ export function processElements(elements: C4Element[]): string[] {
           const childDesc = child.description;
           const childMacro = getElementMacro(child);
           const childTechStr = child.technology ? `, "${child.technology}"` : '';
-          
-          if (child.descriptor.baseType === 'container' || child.descriptor.baseType === 'component') {
+
+          // Special handling for Note elements inside a boundary
+          if (child.descriptor.baseType === 'note') {
+            lines.push(`  note as ${childId}`);
+            lines.push(`  ${childDesc}`);
+            lines.push('  end note');
+          } else if (child.descriptor.baseType === 'container' || child.descriptor.baseType === 'component') {
             lines.push(`  ${childMacro}(${childId}, "${childName}"${childTechStr}, "${childDesc}")`);
           } else {
             lines.push(`  ${childMacro}(${childId}, "${childName}", "${childDesc}")`);
@@ -113,6 +127,13 @@ export function processElements(elements: C4Element[]): string[] {
         const description = element.description;
         const macro = getElementMacro(element);
         const techStr = element.technology ? `, "${element.technology}"` : '';
+
+        // Special handling for remaining Note elements
+        if (element.descriptor.baseType === 'note') {
+          lines.push(`note as ${id}`);
+          lines.push(element.description);
+          lines.push('end note');
+        } else
         
         // Add any remaining elements
         if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
@@ -150,6 +171,15 @@ elements.forEach(element => {
     const description = element.description;
     const macro = getElementMacro(element);
     const techStr = element.technology ? `, "${element.technology}"` : ', ""';
+
+    // Special handling for Note elements
+    if (element.descriptor.baseType === 'note') {
+      lines.push(`note as ${id}`);
+      lines.push(element.description);
+      lines.push('end note');
+      processedElementIds.add(element.id);
+      return;
+    }
     
     // For interface diagrams, we add tag based on interfaceType
     let tagsStr = '';
@@ -244,6 +274,15 @@ export function processSequenceElements(elements: C4Element[]): string[] {
     const description = element.description;
     const macro = getElementMacro(element);
     const techStr = element.technology ? `, "${element.technology}"` : '';
+
+    // Special handling for Note elements in sequence diagrams
+    if (element.descriptor.baseType === 'note') {
+      lines.push(`note as ${id}`);
+      lines.push(element.description);
+      lines.push('end note');
+      processedElementIds.add(element.id);
+      return;
+    }
     
     // Add standalone elements (participants in sequence diagram)
     if (element.descriptor.baseType === 'container' || element.descriptor.baseType === 'component') {
