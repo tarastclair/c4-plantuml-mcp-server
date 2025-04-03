@@ -41,7 +41,7 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
     }
     lines.push('');
     lines.push('note as ExistingProject');
-    lines.push(`This diagram is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
+    lines.push(`This diagram with ID "${diagram.id}" is part of the "${project.name}" project with ID "${diagram.projectId}". Future diagrams related to this project should use this same ID.`);
     lines.push('end note');
     lines.push('');
   }

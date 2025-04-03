@@ -13,7 +13,7 @@ import { createContextDiagramTool } from "./createContextDiagramTool.js";
 import { addElementTool } from "./addElementTool.js";
 import { addRelationshipTool } from "./addRelationshipTool.js";
 import { locateOrCreateC4ProjectTool } from "./locateOrCreateC4ProjectTool.js";
-import { deleteElementTool } from "./deleteElementTool.js";
+import { deleteDiagramEntityTool } from "./deleteDiagramEntityTool.js";
 import { createContainerDiagramTool } from "./createContainerDiagramTool.js";
 import { createComponentDiagramTool } from "./createComponentDiagramTool.js";
 import { generateDiagramImageTool } from "./generateDiagramImageTool.js";
@@ -33,7 +33,7 @@ export const registerAllTools = (server: McpServer, db: DiagramDb): void => {
   addElementTool(server, db);
   addRelationshipTool(server, db);
   locateOrCreateC4ProjectTool(server, db);
-  deleteElementTool(server, db);
+  deleteDiagramEntityTool(server, db);
   createContainerDiagramTool(server, db);
   createComponentDiagramTool(server, db);
   generateDiagramImageTool(server, db);
