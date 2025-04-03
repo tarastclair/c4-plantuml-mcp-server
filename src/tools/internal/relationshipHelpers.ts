@@ -75,7 +75,8 @@ async function createRelationshipCore(
 
   // Prepare metadata from optional parameters
   const metadata: Record<string, unknown> = {
-    direction: direction
+    direction: direction,
+    created: new Date().toISOString() // Creation to help us process dividers
   };
   if (params.sprite) metadata.sprite = params.sprite;
   if (params.tags) metadata.tags = params.tags;

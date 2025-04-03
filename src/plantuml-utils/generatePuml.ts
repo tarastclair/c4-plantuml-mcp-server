@@ -8,7 +8,7 @@
 import { C4Diagram, DiagramType, Project } from '../types-and-interfaces.js';
 import { savePumlFile } from '../filesystem-utils.js';
 import { DiagramDb } from '../db/index.js';
-import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships, processSequenceElements, addSequenceRelationships, processSequenceSpecialElements } from './index.js';
+import { getPlantUMLImport, getInterfaceDiagramSetup, processElements, processInterfaceDiagramElements, addInterfaceDiagramRelationships, addRelationships, processSequenceElements, processSequenceSpecialElementsAndRelationships } from './index.js';
 
 /**
  * Generate PlantUML source for a diagram
@@ -60,9 +60,9 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
     const elementLines = processSequenceElements(diagram.elements);
     lines.push(...elementLines);
     
-    // Add special sequence elements (dividers, groups, etc.)
-    const specialElementLines = processSequenceSpecialElements(diagram.elements);
-    lines.push(...specialElementLines);
+    // Process any dividers and relationships together
+    const sequenceContentLines = processSequenceSpecialElementsAndRelationships(diagram);
+    lines.push(...sequenceContentLines);
   } else {
     const elementLines = processElements(diagram.elements);
     lines.push(...elementLines);
@@ -73,7 +73,9 @@ export const generatePlantUMLSource = (project: Project, diagram: C4Diagram): st
   if (diagram.diagramType === DiagramType.INTERFACE) {
     addInterfaceDiagramRelationships(diagram, lines);
   } else if (diagram.diagramType === DiagramType.SEQUENCE) {
-    addSequenceRelationships(diagram, lines);
+    // Do nothing; We handled processing relationships earlier
+    // because sequence diagrams have a special divider element
+    // that needs to appear in the proper order with relationships
   } else {
     addRelationships(diagram, lines);
   }
