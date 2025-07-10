@@ -160,12 +160,9 @@ export const locateOrCreateC4ProjectTool = (server: McpServer, db: DiagramDb): v
           });
           
           const message = `Found similar existing project "${match.name}" (ID: ${match.id}).\n\n` +
-            `To maintain proper diagram relationships, you should use this existing project ID ` + 
-            `with the appropriate diagram creation tool.\n\n` +
-            `Existing diagrams in this project:\n${diagramInfoText}\n\n` +
-            `Based on the existing diagrams, you should likely use:\n` +
-            `${suggestedNextTool} with projectId: ${match.id}\n\n` +
-            `What would you like to create next?`;
+            `Unless the user specifically wants to create a new project, ` +
+            `it is recommended to use the existing project ID to maintain diagram relationships.\n\n` +
+            `Existing diagrams in this project:\n${diagramInfoText}\n\n`;
             
           return createToolResponse(message, {
             projectId: match.id,
@@ -185,18 +182,18 @@ export const locateOrCreateC4ProjectTool = (server: McpServer, db: DiagramDb): v
           normalizedPath = path.resolve(getAppRoot(), normalizedPath);
         }
 
-        // Create a project-specific subdirectory based on the name
-        const safeProjectName = name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .substring(0, 50);
+        // // Create a project-specific subdirectory based on the name
+        // const safeProjectName = name
+        //   .toLowerCase()
+        //   .replace(/[^a-z0-9]+/g, '-')
+        //   .replace(/^-+|-+$/g, '')
+        //   .substring(0, 50);
 
-        const fullProjectPath = path.join(normalizedPath, safeProjectName);
+        // const fullProjectPath = path.join(normalizedPath, safeProjectName);
 
         try {
           // Check if we can access/create the directory
-          await fs.access(path.dirname(fullProjectPath));
+          await fs.access(path.dirname(normalizedPath));
         } catch (accessError) {
           return createErrorResponse(
             `Cannot access the specified directory path. Please ensure the directory exists and you have permission to write to it: ${normalizedPath}`
@@ -204,7 +201,7 @@ export const locateOrCreateC4ProjectTool = (server: McpServer, db: DiagramDb): v
         }
 
         // Create the project directories
-        await createProjectDirectories(fullProjectPath);
+        await createProjectDirectories(normalizedPath);
 
         // Create project in database
         const now = new Date().toISOString();
@@ -212,7 +209,7 @@ export const locateOrCreateC4ProjectTool = (server: McpServer, db: DiagramDb): v
           id: crypto.randomUUID(), // Using native crypto for UUID
           name,
           description,
-          rootPath: fullProjectPath,
+          rootPath: normalizedPath,
           diagrams: [],
           created: now,
           updated: now,
@@ -221,7 +218,7 @@ export const locateOrCreateC4ProjectTool = (server: McpServer, db: DiagramDb): v
         // Store the project
         await db.createProject(project);
 
-        const message = `Created new C4 architecture project "${project.name}" with ID ${project.id} at ${fullProjectPath}.\n\n` +
+        const message = `Created new C4 architecture project "${project.name}" with ID ${project.id} at ${normalizedPath}.\n\n` +
           `You can now create diagrams within this project using the following tools:\n` +
           `- create-context-diagram (for Level 1 Context diagrams)\n` +
           `- create-container-diagram (for Level 2 Container diagrams)\n` +
