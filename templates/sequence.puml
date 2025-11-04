@@ -1,0 +1,17 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+HIDE_STEREOTYPE()
+
+title [Diagram Title]
+
+' Add sequence diagram elements and relationships, for example:
+' Person(user, "User", "A user of the system")
+' Component(c1, "Controller", "Spring MVC", "Handles HTTP requests")
+' Rel(user, c1, "Makes API request", "HTTP")
+' == Authentication Step ==
+' group Login Process
+' Rel(c1, db, "Verifies credentials", "JDBC")
+' end
+' SHOW_ELEMENT_DESCRIPTIONS()
+
+@enduml

@@ -185,7 +185,7 @@ The following features from the original MCP implementation are **deliberately n
 
 ## Next Steps
 
-### 1. Create Diagram Templates (templates/*.puml)
+### 1. (COMPLETE) Create Diagram Templates (templates/*.puml)
 
 **Files:**
 - `context.puml` - Context diagram boilerplate
