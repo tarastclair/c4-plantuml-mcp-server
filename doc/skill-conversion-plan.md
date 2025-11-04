@@ -241,7 +241,7 @@ Each template should include:
 - Boundaries use `System_Boundary` or `Container_Boundary` with `{ }` syntax
 - Sequence diagrams support dividers with `== Title ==` syntax
 
-### 2. Build scripts/init-structure.sh
+### 2. (COMPLETE) Build scripts/init-structure.sh
 
 **Requirements:**
 - Written in **bash** for minimal dependencies
@@ -256,7 +256,7 @@ Each template should include:
 - Report what was created or verified
 - Use standard bash commands (mkdir, test, echo)
 
-### 3. Build scripts/render-diagram.py
+### 3. (COMPLETE) Build scripts/render-diagram.py
 
 **Requirements:**
 - Written in **Python** for better HTTP/retry handling
