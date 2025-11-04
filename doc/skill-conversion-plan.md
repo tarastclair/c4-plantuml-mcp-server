@@ -74,10 +74,10 @@ The following is a proposed architecture for the C4 Diagram Skill conversion, fo
 
 **Skill Package Structure:**
 ```
-c4-diagrams/
+.claude/skills/c4-diagrams/
 ├── SKILL.md                    # Main workflow (< 500 lines)
 ├── scripts/
-│   ├── init-structure.sh       # Create/verify diagrams directory structure (Bash)
+│   ├── init-structure.sh       # Create/verify doc/diagrams/ directory structure (Bash)
 │   └── render-diagram.py       # API call to PlantUML server (Python)
 ├── reference/
 │   ├── c4-model.md             # C4 model concepts (lazy-loaded)
@@ -102,7 +102,7 @@ Claude will use Read (template) + Write (new file) for diagram initialization, w
 
 **Working Directory Structure (Created by Skill):**
 ```
-diagrams/                       # Created in current working directory
+doc/diagrams/                   # Created at project root
 ├── context/                    # Context-level diagrams
 │   ├── diagram-name.puml
 │   └── diagram-name.png
@@ -158,7 +158,7 @@ The following features from the original MCP implementation are **deliberately n
    - ❌ Project-level metadata (names, IDs, descriptions)
    - ❌ Project database or registry
    - **Reason**: Skills must be stateless; persistent project state contradicts this principle
-   - **Alternative**: Users navigate to their desired directory; `diagrams/` becomes the implicit project
+   - **Alternative**: `doc/diagrams/` at project root becomes the implicit project location
 
 2. **Dedicated Update/Delete Tools**
    - ❌ `update-element` tool for modifying elements
@@ -251,8 +251,8 @@ Each template should include:
 - Self-documenting with comments explaining purpose
 
 **Behavior:**
-- Check if `diagrams/` exists
-- Create subdirectories: context/, container/, component/, sequence/
+- Check if `doc/diagrams/` exists at project root
+- Create subdirectories: doc/diagrams/context/, doc/diagrams/container/, doc/diagrams/component/, doc/diagrams/sequence/
 - Report what was created or verified
 - Use standard bash commands (mkdir, test, echo)
 

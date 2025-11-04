@@ -102,10 +102,10 @@ The Skills conversion represents **intentional architectural simplification** ra
 
 **1. No "Project" Concept**
 - **MCP Version**: Projects were database entities with names, IDs, metadata, and discovery features
-- **Skills Version**: The `diagrams/` directory in the current working directory IS your project
+- **Skills Version**: The `doc/diagrams/` directory at project root IS your project
 - **Rationale**: Skills must be stateless; project discovery/fuzzy matching requires persistent state
-- **Impact**: Users navigate to their project directory first, then invoke the skill
-- **Trade-off**: Simpler but requires user to manage directory structure
+- **Impact**: Skill creates/uses `doc/diagrams/` at project root automatically
+- **Trade-off**: Simpler but fixed location at doc/diagrams/
 
 **2. Natural Language Editing Over Programmatic Tools**
 - **MCP Version**: Dedicated tools for update-element, update-relationship, delete-entity
@@ -133,7 +133,7 @@ The Skills conversion represents **intentional architectural simplification** ra
 Since Skills execute on-demand rather than running as persistent processes, the architecture must be **completely stateless**:
 
 1. **No Database**: All state is stored in the file system
-   - Diagram structure → Directory structure (`diagrams/{type}/`)
+   - Diagram structure → Directory structure (`doc/diagrams/{type}/`)
    - Diagram content → PUML files (`{name}.puml`)
    - Rendered output → PNG files (`{name}.png`)
 
@@ -143,7 +143,7 @@ Since Skills execute on-demand rather than running as persistent processes, the 
    - Claude understands diagram state from file contents
 
 3. **File-Based Discovery**:
-   - List diagrams: `ls diagrams/context/` shows all context diagrams
+   - List diagrams: `ls doc/diagrams/context/` shows all context diagrams
    - Find elements: Read PUML file and parse element definitions
    - Check relationships: Parse PUML relationship syntax
 
@@ -156,7 +156,7 @@ Since Skills execute on-demand rather than running as persistent processes, the 
 - **Simplicity**: No database synchronization or migration issues
 - **Transparency**: Users can view/edit PUML files directly in their editor
 - **Version Control**: Git-friendly - all changes are trackable
-- **Portability**: Copy `diagrams/` folder = copy entire project
+- **Portability**: Copy `doc/diagrams/` folder = copy entire project
 - **Debugging**: Easy to inspect state by reading files
 - **No Lock-In**: PUML files work with any PlantUML tool
 - **Fewer Dependencies**: No LowDB or database library needed
@@ -180,23 +180,23 @@ allowed-tools: Bash, Read, Write, Edit
 
 **Phase 1: Initialize Diagram Directory Structure**
 
-**Note:** There is no "project" concept in Skills version - the `diagrams/` directory in your current working directory IS your project. No project metadata, names, or discovery features.
+**Note:** There is no "project" concept in Skills version - the `doc/diagrams/` directory at project root IS your project location. No project metadata, names, or discovery features.
 
 **Check for existing structure:**
-1. Use Bash to check if `diagrams/` exists in current working directory: `ls -la | grep diagrams`
+1. Use Bash to check if `doc/diagrams/` exists: `ls -la doc/diagrams 2>/dev/null`
 2. If it exists and contains subdirectories `context/`, `container/`, `component/`, `sequence/`, proceed to Phase 2
 3. If missing or incomplete, initialize structure
 
 **Initialize structure:**
-1. Run initialization script: `bash scripts/init-structure.sh`
+1. Run initialization script: `bash .claude/skills/c4-diagrams/scripts/init-structure.sh`
 2. Script will create:
-   - `diagrams/context/` - For context-level diagrams
-   - `diagrams/container/` - For container-level diagrams
-   - `diagrams/component/` - For component-level diagrams
-   - `diagrams/sequence/` - For sequence diagrams
+   - `doc/diagrams/context/` - For context-level diagrams
+   - `doc/diagrams/container/` - For container-level diagrams
+   - `doc/diagrams/component/` - For component-level diagrams
+   - `doc/diagrams/sequence/` - For sequence diagrams
 3. Verify creation succeeded before proceeding to Phase 2
 
-**Error handling:** If script fails, report error to user and ask if they have write permissions in current directory.
+**Error handling:** If script fails, report error to user and ask if they have write permissions in project directory.
 
 ---
 
@@ -205,16 +205,16 @@ allowed-tools: Bash, Read, Write, Edit
 **Determine diagram details from user request:**
 1. Identify diagram type: context | container | component | sequence
 2. Extract diagram name from user request (convert to lowercase, replace spaces with hyphens)
-3. Construct target path: `diagrams/{type}/{name}.puml`
+3. Construct target path: `doc/diagrams/{type}/{name}.puml`
 
 **Check if diagram exists:**
-1. Use Bash to check: `ls diagrams/{type}/{name}.puml 2>/dev/null`
+1. Use Bash to check: `ls doc/diagrams/{type}/{name}.puml 2>/dev/null`
 2. If exists: Read file to understand current state, proceed to Phase 3 or 4
 3. If new: Continue to template initialization
 
 **Initialize new diagram from template:**
-1. Read appropriate template: `Read templates/{type}.puml`
-2. Write template to target location: `diagrams/{type}/{name}.puml`
+1. Read appropriate template: `Read .claude/skills/c4-diagrams/templates/{type}.puml`
+2. Write template to target location: `doc/diagrams/{type}/{name}.puml`
 3. Optionally replace placeholder values with user-specified title/labels
 4. Proceed to Phase 3
 
@@ -223,7 +223,7 @@ allowed-tools: Bash, Read, Write, Edit
 **Phase 3: Add Elements to Diagram**
 
 **Parse current diagram state:**
-1. Read the PUML file: `Read diagrams/{type}/{name}.puml`
+1. Read the PUML file: `Read doc/diagrams/{type}/{name}.puml`
 2. Identify existing elements (Person, System, Container, Component)
 3. Understand current layout and groupings
 
@@ -263,11 +263,11 @@ allowed-tools: Bash, Read, Write, Edit
 **Phase 5: Render Diagram Image**
 
 **Generate PNG from PUML:**
-1. Run rendering script: `python3 scripts/render-diagram.py diagrams/{type}/{name}.puml`
+1. Run rendering script: `python3 .claude/skills/c4-diagrams/scripts/render-diagram.py doc/diagrams/{type}/{name}.puml`
 2. Script will:
    - POST PUML content to PlantUML server API
    - Receive PNG image response
-   - Save to `diagrams/{type}/{name}.png`
+   - Save to `doc/diagrams/{type}/{name}.png`
 3. Report success and image location to user
 
 **Error handling:**
@@ -283,12 +283,12 @@ allowed-tools: Bash, Read, Write, Edit
 ## Script Responsibilities
 
 **init-structure.sh** (Bash)
-- Check if `diagrams/` directory exists
+- Check if `doc/diagrams/` directory exists at project root
 - Create directory structure if missing:
-  - `diagrams/context/`
-  - `diagrams/container/`
-  - `diagrams/component/`
-  - `diagrams/sequence/`
+  - `doc/diagrams/context/`
+  - `doc/diagrams/container/`
+  - `doc/diagrams/component/`
+  - `doc/diagrams/sequence/`
 - Exit with success (code 0) if structure is valid
 - Exit with error code (non-zero) if unable to create structure
 - **Self-documenting requirements:**
@@ -298,8 +298,8 @@ allowed-tools: Bash, Read, Write, Edit
 - **Language choice rationale:** Simple directory operations - bash minimizes dependencies
 
 **render-diagram.py** (Python)
-- **Input:** Path to `.puml` file (e.g., `diagrams/context/system.puml`)
-- **Output:** PNG image saved to same directory with same name (e.g., `diagrams/context/system.png`)
+- **Input:** Path to `.puml` file (e.g., `doc/diagrams/context/system.puml`)
+- **Output:** PNG image saved to same directory with same name (e.g., `doc/diagrams/context/system.png`)
 - POSTs to public PlantUML server API
 - **Self-documenting requirements:**
   - Justified constants example:
