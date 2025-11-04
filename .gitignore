@@ -1,3 +1,7 @@
+# Sensitive files
+.claude/settings.local.json
+.aws-login
+
 # Dependency Directories
 node_modules/
 jspm_packages/
