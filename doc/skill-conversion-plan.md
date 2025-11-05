@@ -298,7 +298,7 @@ Each template should include:
 - Validation loops explicitly stated
 - One-level-deep references
 
-### 5. Write Reference Documentation
+### 5. (COMPLETE) Write Reference Documentation
 
 **reference/c4-model.md**
 - C4 model theory and principles

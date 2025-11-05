@@ -117,6 +117,11 @@ Choose the appropriate diagram type based on what you want to visualize:
 - **Elements**: Any of the above, with time-ordered relationships
 - **Use when**: Explaining workflows, processes, or API call chains
 - **Audience**: Developers and architects
+- **⚠️ Important constraints**:
+  - ❌ **NO boundaries** - Container_Boundary, System_Boundary are not supported
+  - ❌ **NO _Ext suffixes** - Use Container(), not Container_Ext()
+  - ✅ Participants must be in a **flat list** (no nesting or grouping structures)
+  - ✅ Relationships are **time-ordered** from top to bottom
 
 **For detailed guidance on when to use each type**, see [Diagram Types Guide](./reference/diagram-types.md).
 
@@ -203,7 +208,13 @@ Read doc/diagrams/{type}/{name}.puml
 - `ComponentDb(id, "Name", "Technology", "Description")` - Database components
 - `ComponentQueue(id, "Name", "Technology", "Description")` - Queue components
 
-**Boundaries** (all diagram types):
+**Sequence diagrams:**
+- Use the same element types as above (Person, Container, Component, etc.)
+- ⚠️ **CRITICAL**: Do NOT use boundaries (System_Boundary, Container_Boundary) - sequence diagrams require a **flat participant list**
+- ⚠️ **CRITICAL**: Do NOT use _Ext suffixes (System_Ext, Container_Ext, ContainerDb_Ext) - use regular variants instead
+- Example: Use `Container(cache, "Cache", "Redis", "Desc")` not `Container_Ext(...)`
+
+**Boundaries** (Context/Container/Component diagrams only - NOT sequence):
 ```
 System_Boundary(id, "Name", "Optional Description") {
   // Elements inside the boundary (indented with 2 spaces)
@@ -441,9 +452,28 @@ System_Boundary(backend, "Backend") {
 Rel(user, app, "Uses")  // WRONG if 'user' not defined first
 ```
 
+❌ **Don't** use boundaries in sequence diagrams → ✅ **Do** use flat participant lists:
+```plantuml
+' WRONG - sequence diagrams don't support boundaries
+Container_Boundary(backend, "Backend") {
+  Container(api, "API", "Node.js", "Server")
+}
+
+' CORRECT - flat list of participants
+Container(api, "API", "Node.js", "Server")
+```
+
+❌ **Don't** use _Ext suffixes in sequence diagrams → ✅ **Do** use regular variants:
+```plantuml
+Container_Ext(cache, "Cache", "Redis", "Cache")     // WRONG in sequence
+Container(cache, "Cache", "Redis", "Cache")          // CORRECT
+```
+
 ⚠️ **Important:** Place diagrams in correct subdirectories (`doc/diagrams/context/`, `container/`, `component/`, `sequence/`)
 
 ⚠️ **Important:** Validate PUML syntax before rendering to avoid errors and server requests
+
+⚠️ **Important:** Sequence diagrams have unique syntax constraints - see template and syntax reference
 
 ---
 
